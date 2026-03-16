@@ -1,0 +1,35 @@
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express from "express";
+import helmet from "helmet";
+
+import { env } from "./config/env.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { notFoundHandler } from "./middleware/notFound.js";
+import { apiRouter } from "./routes/index.js";
+
+const app = express();
+
+app.use(
+  cors({
+    origin: env.frontendUrl,
+    credentials: true
+  })
+);
+app.use(helmet());
+app.use(express.json());
+app.use(cookieParser());
+
+app.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "sr-aiims-hms-api",
+    environment: env.nodeEnv
+  });
+});
+
+app.use("/api/v1", apiRouter);
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+export { app };
