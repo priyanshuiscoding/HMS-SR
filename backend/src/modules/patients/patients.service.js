@@ -76,6 +76,14 @@ export function getPatientHistory(id) {
     .filter((bill) => bill.patientId === id)
     .sort((a, b) => b.billDate.localeCompare(a.billDate));
 
+  const dispensations = db.dispensations
+    .filter((dispense) => dispense.patientId === id)
+    .sort((a, b) => b.dispensedDate.localeCompare(a.dispensedDate));
+
+  const payments = db.payments
+    .filter((payment) => payment.patientId === id)
+    .sort((a, b) => b.paymentDate.localeCompare(a.paymentDate));
+
   const timeline = [
     ...appointmentHistory.map((appointment) => ({
       id: `apt-${appointment.id}`,
@@ -124,6 +132,22 @@ export function getPatientHistory(id) {
       title: bill.billNumber,
       summary: `Billing - ${bill.paymentStatus}`,
       detail: `Rs. ${bill.totalAmount}`
+    })),
+    ...dispensations.map((dispense) => ({
+      id: `disp-${dispense.id}`,
+      type: "dispensation",
+      date: dispense.dispensedDate.slice(0, 10),
+      title: dispense.dispenseNumber,
+      summary: "Pharmacy dispensing completed",
+      detail: dispense.items.map((item) => `${item.medicineName} x${item.quantity}`).join(", ")
+    })),
+    ...payments.map((payment) => ({
+      id: `pay-${payment.id}`,
+      type: "payment",
+      date: payment.paymentDate.slice(0, 10),
+      title: payment.receiptNumber,
+      summary: `Payment received via ${payment.paymentMode}`,
+      detail: `Rs. ${payment.amount}`
     }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -135,6 +159,8 @@ export function getPatientHistory(id) {
     prescriptions,
     labOrders,
     bills,
+    dispensations,
+    payments,
     timeline
   };
 }

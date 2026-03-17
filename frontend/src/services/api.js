@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 function getAccessToken() {
   try {
@@ -282,6 +282,144 @@ export async function getBills(params = {}) {
 
 export async function createBill(payload) {
   const response = await fetch(`${API_BASE_URL}/billing/bills`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getBillingSummary() {
+  const response = await fetch(`${API_BASE_URL}/billing/summary`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getBill(id) {
+  const response = await fetch(`${API_BASE_URL}/billing/bills/${id}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function collectBillPayment(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/billing/bills/${id}/payments`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPharmacyMasters() {
+  const response = await fetch(`${API_BASE_URL}/pharmacy/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPharmacyStock() {
+  const response = await fetch(`${API_BASE_URL}/pharmacy/stock`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPharmacyPrescriptions(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/pharmacy/prescriptions${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getDispensations(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/pharmacy/dispensations${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function dispensePrescription(prescriptionId, payload) {
+  const response = await fetch(`${API_BASE_URL}/pharmacy/prescriptions/${prescriptionId}/dispense`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getInventoryMasters() {
+  const response = await fetch(`${API_BASE_URL}/inventory/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getInventoryBatches(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/inventory/batches${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getInventoryTransactions(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/inventory/transactions${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function receiveInventoryStock(payload) {
+  const response = await fetch(`${API_BASE_URL}/inventory/receive`, {
     method: "POST",
     headers: createHeaders(),
     credentials: "include",

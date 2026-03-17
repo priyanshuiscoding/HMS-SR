@@ -19,14 +19,14 @@ const timeline = [
   {
     time: "14:00",
     title: "Operational continuity",
-    copy: "IPD, therapy, pharmacy, lab, and billing surfaces will plug into this dashboard next."
+    copy: "Billing desk, pharmacy dispensing, inventory control, and lab hooks are now extending the working HMS shell."
   }
 ];
 
 const quickActions = [
   {
-    title: "Phase 4 active",
-    copy: "Patients, appointments, OPD, lab hooks, and billing hooks are now connected in the HMS shell."
+    title: "Phase 6 active",
+    copy: "Patients, appointments, OPD, billing desk, lab, pharmacy, and inventory are now connected in the HMS shell."
   },
   {
     title: "Brand alignment",
@@ -34,7 +34,7 @@ const quickActions = [
   },
   {
     title: "Next build target",
-    copy: "Billing depth, lab workflow detail, and pharmacy linkage are the next operational upgrades."
+    copy: "Room/IPD flow, admissions, and bed management are the next operational upgrades."
   }
 ];
 
@@ -62,20 +62,20 @@ export function DashboardPage() {
         <h2>One Shanti-Ratnam system for reception, clinical care, patient journeys, and hospital operations.</h2>
         <p>
           Welcome back, {user?.fullName || "team member"}. This dashboard is the live working layer of the
-          SR-AIIMS HMS and now includes the first real operational modules for patient registry and
-          appointment scheduling.
+          SR-AIIMS HMS and now includes patient flow, OPD consultation, lab and billing hooks, plus pharmacy
+          and inventory control, with a working billing desk for payments and invoices.
         </p>
       </section>
 
       <section className="stat-grid">
-        <StatCard label="Phase" value="04" note="Lab and billing hooks live" />
+        <StatCard label="Phase" value="06" note="Billing desk and payments live" />
         <StatCard label="Role" value={user?.role || "guest"} note="RBAC-aware shell active" />
         <StatCard
           label="Modules Ready"
-          value={String(overview?.modulesReady?.length || 7)}
-          note="Auth, dashboard, patients, appointments, opd, lab, billing"
+          value={String(overview?.modulesReady?.length || 9)}
+          note="Auth, patients, appointments, opd, lab, billing, pharmacy, inventory"
         />
-        <StatCard label="Next Sprint" value="05" note="Lab detail and pharmacy linkage" />
+        <StatCard label="Next Sprint" value="07" note="IPD admissions and bed flow" />
       </section>
 
       <section className="content-grid">

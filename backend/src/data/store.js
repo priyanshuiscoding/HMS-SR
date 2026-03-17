@@ -24,6 +24,8 @@ const meeraAssessmentId = createId();
 const meeraPrescriptionId = createId();
 const meeraLabOrderId = createId();
 const meeraBillId = createId();
+const meeraDispenseId = createId();
+const meeraPaymentId = createId();
 
 export const db = {
   patients: [
@@ -180,7 +182,7 @@ export const db = {
       chikitsaSutra: "Vata shamana, srotoshodhana, nidra normalization",
       dietRecommendations: "Warm food, hydration, avoid late-night meals and cold exposure",
       followUpDate: today,
-      isDispensed: false,
+      isDispensed: true,
       medicines: [
         {
           id: createId(),
@@ -272,6 +274,7 @@ export const db = {
       paidAmount: 850,
       paymentStatus: "paid",
       createdBy: demoUsers[6]?.id || demoUsers[0].id,
+      notes: "Follow-up consultation with CBC charge included.",
       items: [
         {
           id: createId(),
@@ -292,41 +295,203 @@ export const db = {
       ]
     }
   ],
+  payments: [
+    {
+      id: meeraPaymentId,
+      receiptNumber: `RCT-${currentYear()}-00001`,
+      billId: meeraBillId,
+      patientId: meeraPatientId,
+      patientName: "Meera Sharma",
+      paymentDate: `${today}T11:25:00`,
+      amount: 850,
+      paymentMode: "upi",
+      referenceNumber: "UPI-SR-10231",
+      receivedBy: demoUsers[8]?.id || demoUsers[0].id,
+      note: "Collected at billing desk after consultation."
+    }
+  ],
   medicineMasters: [
     {
       id: "med-001",
       code: "SRA-MED-001",
       name: "Mahayograj Guggulu",
       formulation: "Tablet",
-      category: "Ayurvedic Classical"
+      category: "Ayurvedic Classical",
+      unit: "tablet",
+      reorderLevel: 40,
+      price: 18,
+      gstPercent: 5
     },
     {
       id: "med-002",
       code: "SRA-MED-002",
       name: "Dashmool Kwath",
       formulation: "Kwath",
-      category: "Ayurvedic Classical"
+      category: "Ayurvedic Classical",
+      unit: "bottle",
+      reorderLevel: 20,
+      price: 140,
+      gstPercent: 5
     },
     {
       id: "med-003",
       code: "SRA-MED-003",
       name: "Ashwagandha Churna",
       formulation: "Churna",
-      category: "Ayurvedic Classical"
+      category: "Ayurvedic Classical",
+      unit: "jar",
+      reorderLevel: 15,
+      price: 165,
+      gstPercent: 5
     },
     {
       id: "med-004",
       code: "SRA-MED-004",
       name: "Brahmi Vati",
       formulation: "Tablet",
-      category: "Ayurvedic Classical"
+      category: "Ayurvedic Classical",
+      unit: "tablet",
+      reorderLevel: 35,
+      price: 14,
+      gstPercent: 5
     },
     {
       id: "med-005",
       code: "SRA-MED-005",
       name: "Nirgundi Taila",
       formulation: "Taila",
-      category: "External Therapy"
+      category: "External Therapy",
+      unit: "bottle",
+      reorderLevel: 12,
+      price: 220,
+      gstPercent: 12
+    }
+  ],
+  suppliers: [
+    {
+      id: "sup-001",
+      name: "Ayush Pharma Traders",
+      phone: "9876500011",
+      city: "Bhopal"
+    },
+    {
+      id: "sup-002",
+      name: "Kerala Wellness Distributors",
+      phone: "9876500012",
+      city: "Indore"
+    }
+  ],
+  inventoryBatches: [
+    {
+      id: "batch-001",
+      medicineId: "med-001",
+      medicineName: "Mahayograj Guggulu",
+      batchNumber: "MYG-2401",
+      supplierId: "sup-001",
+      receivedDate: today,
+      expiryDate: `${currentYear() + 1}-12-31`,
+      quantityReceived: 120,
+      quantityAvailable: 100,
+      purchasePrice: 11,
+      sellingPrice: 18
+    },
+    {
+      id: "batch-002",
+      medicineId: "med-002",
+      medicineName: "Dashmool Kwath",
+      batchNumber: "DMK-2402",
+      supplierId: "sup-002",
+      receivedDate: today,
+      expiryDate: `${currentYear()}-07-15`,
+      quantityReceived: 18,
+      quantityAvailable: 18,
+      purchasePrice: 95,
+      sellingPrice: 140
+    },
+    {
+      id: "batch-003",
+      medicineId: "med-003",
+      medicineName: "Ashwagandha Churna",
+      batchNumber: "AWC-2401",
+      supplierId: "sup-001",
+      receivedDate: today,
+      expiryDate: `${currentYear() + 1}-10-30`,
+      quantityReceived: 22,
+      quantityAvailable: 8,
+      purchasePrice: 108,
+      sellingPrice: 165
+    },
+    {
+      id: "batch-004",
+      medicineId: "med-005",
+      medicineName: "Nirgundi Taila",
+      batchNumber: "NGT-2401",
+      supplierId: "sup-002",
+      receivedDate: today,
+      expiryDate: `${currentYear()}-05-20`,
+      quantityReceived: 10,
+      quantityAvailable: 4,
+      purchasePrice: 150,
+      sellingPrice: 220
+    }
+  ],
+  stockTransactions: [
+    {
+      id: createId(),
+      transactionDate: `${today}T09:00:00`,
+      medicineId: "med-001",
+      medicineName: "Mahayograj Guggulu",
+      batchId: "batch-001",
+      type: "receipt",
+      quantity: 120,
+      referenceNumber: "GRN-2026-00001",
+      note: "Opening pharmacy stock"
+    },
+    {
+      id: createId(),
+      transactionDate: `${today}T09:10:00`,
+      medicineId: "med-003",
+      medicineName: "Ashwagandha Churna",
+      batchId: "batch-003",
+      type: "receipt",
+      quantity: 22,
+      referenceNumber: "GRN-2026-00002",
+      note: "Opening stock received"
+    },
+    {
+      id: createId(),
+      transactionDate: `${today}T09:20:00`,
+      medicineId: "med-005",
+      medicineName: "Nirgundi Taila",
+      batchId: "batch-004",
+      type: "receipt",
+      quantity: 10,
+      referenceNumber: "GRN-2026-00003",
+      note: "External therapy stock"
+    }
+  ],
+  dispensations: [
+    {
+      id: meeraDispenseId,
+      dispenseNumber: `DSP-${currentYear()}-00001`,
+      prescriptionId: meeraPrescriptionId,
+      patientId: meeraPatientId,
+      patientName: "Meera Sharma",
+      visitId: meeraVisitId,
+      dispensedBy: demoUsers[0].id,
+      dispensedDate: `${today}T11:05:00`,
+      status: "completed",
+      items: [
+        {
+          id: createId(),
+          medicineId: "med-001",
+          medicineName: "Mahayograj Guggulu",
+          batchId: "batch-001",
+          quantity: 20,
+          unitPrice: 18,
+          amount: 360
+        }
+      ]
     }
   ]
 };
@@ -365,10 +530,27 @@ export function nextBillNumber() {
   return `BILL-${currentYear()}-${String(db.bills.length + 1).padStart(5, "0")}`;
 }
 
+export function nextReceiptNumber() {
+  return `RCT-${currentYear()}-${String(db.payments.length + 1).padStart(5, "0")}`;
+}
+
+export function nextGrnNumber() {
+  const count = db.stockTransactions.filter((item) => item.type === "receipt").length + 1;
+  return `GRN-${currentYear()}-${String(count).padStart(5, "0")}`;
+}
+
+export function nextDispenseNumber() {
+  return `DSP-${currentYear()}-${String(db.dispensations.length + 1).padStart(5, "0")}`;
+}
+
 export function getMedicineMasters() {
   return db.medicineMasters;
 }
 
 export function getLabTestMasters() {
   return db.labTestMasters;
+}
+
+export function getSuppliers() {
+  return db.suppliers;
 }

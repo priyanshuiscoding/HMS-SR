@@ -2,9 +2,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "../pages/auth/Login.jsx";
 import { AppointmentsPage } from "../pages/appointments/AppointmentsPage.jsx";
+import { BillingPage } from "../pages/billing/BillingPage.jsx";
 import { DashboardPage } from "../pages/dashboard/Dashboard.jsx";
+import { InventoryPage } from "../pages/inventory/InventoryPage.jsx";
 import { OpdPage } from "../pages/opd/OpdPage.jsx";
 import { PlaceholderPage } from "../pages/placeholders/PlaceholderPage.jsx";
+import { PharmacyPage } from "../pages/pharmacy/PharmacyPage.jsx";
 import { PatientProfilePage } from "../pages/patients/PatientProfilePage.jsx";
 import { PatientsPage } from "../pages/patients/PatientsPage.jsx";
 import { ProtectedRoute } from "./ProtectedRoute.jsx";
@@ -55,6 +58,33 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <OpdPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/pharmacy"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "pharmacy", "doctor", "accounts"]}>
+            <PharmacyPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "pharmacy", "accounts"]}>
+            <InventoryPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor"]}>
+            <BillingPage />
           </ProtectedRoute>
         }
       />

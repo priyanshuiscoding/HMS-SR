@@ -4,7 +4,10 @@ const primaryLinks = [
   { label: "Dashboard", to: "/" },
   { label: "Patients", to: "/patients" },
   { label: "Appointments", to: "/appointments" },
-  { label: "OPD", to: "/opd" }
+  { label: "OPD", to: "/opd" },
+  { label: "Billing", to: "/billing" },
+  { label: "Pharmacy", to: "/pharmacy" },
+  { label: "Inventory", to: "/inventory" }
 ];
 
 const adminLinks = [

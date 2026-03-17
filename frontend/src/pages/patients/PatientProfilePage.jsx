@@ -154,7 +154,7 @@ export function PatientProfilePage() {
             </article>
 
             <article className="content-card">
-              <h3>Lab and billing</h3>
+              <h3>Lab, billing, and pharmacy</h3>
               <div className="stack-list">
                 {payload.labOrders.map((order) => (
                   <div key={order.id} className="quick-action">
@@ -170,8 +170,27 @@ export function PatientProfilePage() {
                     <div className="timeline-copy">Payment: {bill.paymentStatus}</div>
                   </div>
                 ))}
-                {!payload.labOrders.length && !payload.bills.length ? (
-                  <div className="empty-state">No lab orders or bills recorded yet.</div>
+                {payload.dispensations.map((dispense) => (
+                  <div key={dispense.id} className="quick-action">
+                    <strong>{dispense.dispenseNumber}</strong>
+                    <div className="timeline-copy">
+                      {dispense.items.map((item) => `${item.medicineName} x${item.quantity}`).join(", ")}
+                    </div>
+                    <div className="timeline-copy">Dispensed: {dispense.dispensedDate}</div>
+                  </div>
+                ))}
+                {payload.payments.map((payment) => (
+                  <div key={payment.id} className="quick-action">
+                    <strong>{payment.receiptNumber}</strong>
+                    <div className="timeline-copy">Rs. {payment.amount} via {payment.paymentMode}</div>
+                    <div className="timeline-copy">Received: {payment.paymentDate}</div>
+                  </div>
+                ))}
+                {!payload.labOrders.length &&
+                !payload.bills.length &&
+                !payload.dispensations.length &&
+                !payload.payments.length ? (
+                  <div className="empty-state">No lab, billing, pharmacy, or payment records recorded yet.</div>
                 ) : null}
               </div>
             </article>

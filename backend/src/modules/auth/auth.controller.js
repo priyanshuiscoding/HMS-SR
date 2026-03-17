@@ -13,8 +13,8 @@ export function loginHandler(req, res, next) {
     const result = issueTokens(req.body);
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false
+      sameSite: req.secure ? "none" : "lax",
+      secure: req.secure
     });
 
     res.json(result);
