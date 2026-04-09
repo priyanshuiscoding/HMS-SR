@@ -1,6 +1,7 @@
 import {
   createId,
   db,
+  getGodownImportSummary,
   getMedicineMasters,
   getSuppliers,
   nextGrnNumber
@@ -26,7 +27,8 @@ function getMedicineById(medicineId) {
 export function getInventoryMasters() {
   return {
     medicines: getMedicineMasters(),
-    suppliers: getSuppliers()
+    suppliers: getSuppliers(),
+    godownImport: getGodownImportSummary()
   };
 }
 
@@ -35,6 +37,16 @@ export function listInventoryBatches(query = {}) {
 
   if (query.medicineId) {
     items = items.filter((item) => item.medicineId === query.medicineId);
+  }
+
+  if (query.search) {
+    const search = String(query.search).trim().toLowerCase();
+    items = items.filter((item) =>
+      [item.medicineName, item.company, item.locationMap, item.rawQuantity, item.batchNumber]
+        .join(" ")
+        .toLowerCase()
+        .includes(search)
+    );
   }
 
   return items.sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));

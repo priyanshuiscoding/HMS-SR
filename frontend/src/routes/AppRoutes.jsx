@@ -5,114 +5,37 @@ import { AppointmentsPage } from "../pages/appointments/AppointmentsPage.jsx";
 import { BillingPage } from "../pages/billing/BillingPage.jsx";
 import { DashboardPage } from "../pages/dashboard/Dashboard.jsx";
 import { InventoryPage } from "../pages/inventory/InventoryPage.jsx";
+import { IpdPage } from "../pages/ipd/IpdPage.jsx";
+import { LaboratoryPage } from "../pages/laboratory/LaboratoryPage.jsx";
 import { OpdPage } from "../pages/opd/OpdPage.jsx";
-import { PlaceholderPage } from "../pages/placeholders/PlaceholderPage.jsx";
+import { PanchkarmaPage } from "../pages/panchkarma/PanchkarmaPage.jsx";
 import { PharmacyPage } from "../pages/pharmacy/PharmacyPage.jsx";
 import { PatientProfilePage } from "../pages/patients/PatientProfilePage.jsx";
 import { PatientsPage } from "../pages/patients/PatientsPage.jsx";
+import { PlaceholderPage } from "../pages/placeholders/PlaceholderPage.jsx";
+import { ReportsPage } from "../pages/reports/ReportsPage.jsx";
+import { RoomsPage } from "../pages/rooms/RoomsPage.jsx";
+import { UsersPage } from "../pages/users/UsersPage.jsx";
 import { ProtectedRoute } from "./ProtectedRoute.jsx";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/patients"
-        element={
-          <ProtectedRoute>
-            <PatientsPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/patients/:id"
-        element={
-          <ProtectedRoute>
-            <PatientProfilePage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute>
-            <AppointmentsPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/opd"
-        element={
-          <ProtectedRoute>
-            <OpdPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/pharmacy"
-        element={
-          <ProtectedRoute allowedRoles={["admin", "pharmacy", "doctor", "accounts"]}>
-            <PharmacyPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute allowedRoles={["admin", "pharmacy", "accounts"]}>
-            <InventoryPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/billing"
-        element={
-          <ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor"]}>
-            <BillingPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <PlaceholderPage
-              title="User and staff administration is scaffolded for admin-only access."
-              copy="Once database-backed users are ready, this page will manage staff, roles, departments, and activation."
-            />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute allowedRoles={["admin", "doctor"]}>
-            <PlaceholderPage
-              title="Reports will be introduced once transactional data stabilizes."
-              copy="Daily OPD, revenue, census, and workload analytics will be layered after core workflows are live."
-            />
-          </ProtectedRoute>
-        }
-      />
-
+      <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/patients" element={<ProtectedRoute allowedRoles={["admin", "reception", "doctor", "hr"]}><PatientsPage /></ProtectedRoute>} />
+      <Route path="/patients/:id" element={<ProtectedRoute allowedRoles={["admin", "reception", "doctor"]}><PatientProfilePage /></ProtectedRoute>} />
+      <Route path="/appointments" element={<ProtectedRoute allowedRoles={["admin", "reception", "doctor"]}><AppointmentsPage /></ProtectedRoute>} />
+      <Route path="/opd" element={<ProtectedRoute allowedRoles={["admin", "reception", "doctor"]}><OpdPage /></ProtectedRoute>} />
+      <Route path="/billing" element={<ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor"]}><BillingPage /></ProtectedRoute>} />
+      <Route path="/ipd" element={<ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor", "nursing"]}><IpdPage /></ProtectedRoute>} />
+      <Route path="/panchkarma" element={<ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor", "therapist"]}><PanchkarmaPage /></ProtectedRoute>} />
+      <Route path="/rooms" element={<ProtectedRoute allowedRoles={["admin", "accounts", "reception", "doctor", "nursing"]}><RoomsPage /></ProtectedRoute>} />
+      <Route path="/laboratory" element={<ProtectedRoute allowedRoles={["admin", "doctor", "reception", "lab", "accounts"]}><LaboratoryPage /></ProtectedRoute>} />
+      <Route path="/pharmacy" element={<ProtectedRoute allowedRoles={["admin", "pharmacy", "doctor", "accounts"]}><PharmacyPage /></ProtectedRoute>} />
+      <Route path="/inventory" element={<ProtectedRoute allowedRoles={["admin", "pharmacy", "accounts"]}><InventoryPage /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute allowedRoles={["admin", "hr"]}><UsersPage /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin", "doctor", "accounts", "lab", "therapist", "reception", "nursing", "pharmacy"]}><ReportsPage /></ProtectedRoute>} />
       <Route
         path="/settings"
         element={
@@ -124,8 +47,9 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+
+

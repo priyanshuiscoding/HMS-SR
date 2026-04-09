@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Button } from "../../components/common/Button.jsx";
 import { DashboardLayout } from "../../components/layout/DashboardLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import {
   cancelAppointment,
   createAppointment,
@@ -16,6 +17,9 @@ import {
 const initialForm = {
   patientId: "",
   patientName: "",
+  patientAge: "",
+  patientGender: "",
+  patientMobile: "",
   doctorId: "",
   appointmentDate: new Date().toISOString().slice(0, 10),
   appointmentTime: "",
@@ -27,10 +31,27 @@ const initialForm = {
 };
 
 export function AppointmentsPage() {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [todayQueue, setTodayQueue] = useState([]);
   const [patients, setPatients] = useState([]);
-  const [masters, setMasters] = useState({ doctors: [], departments: [], types: [], statuses: [], sources: [] });
+  const [masters, setMasters] = useState({
+    doctors: [],
+    departments: [],
+    types: [],
+    statuses: [],
+    sources: [],
+    slotDurationMinutes: 10,
+    consultationFee: 200,
+    bookingRules: {
+      maxPatientsPerDay: 100,
+      advanceBookingAllowed: true,
+      sameDayBookingAllowed: true,
+      emergencyOverrideAllowed: false,
+      walkInAllowed: true
+    },
+    opdTimings: { weekday: [], sundayAndHoliday: [] }
+  });
   const [availableSlots, setAvailableSlots] = useState([]);
   const [filters, setFilters] = useState({ date: "", status: "" });
   const [formState, setFormState] = useState(initialForm);
@@ -58,11 +79,17 @@ export function AppointmentsPage() {
           getAppointmentMasters()
         ]);
         setPatients(patientsResponse.items);
-        setMasters(mastersResponse);
+        setMasters((current) => ({ ...current, ...mastersResponse }));
+
+        const firstDoctorId = mastersResponse.doctors[0]?.id || "";
+        const firstDoctorDepartment = mastersResponse.doctors[0]?.department || mastersResponse.departments[0] || "";
+
         setFormState((current) => ({
           ...current,
-          doctorId: mastersResponse.doctors[0]?.id || "",
-          department: mastersResponse.departments[0] || ""
+          doctorId: firstDoctorId,
+          department: firstDoctorDepartment,
+          type: mastersResponse.types?.[0] || "new",
+          source: mastersResponse.sources?.includes("Reception") ? "Reception" : (mastersResponse.sources?.[0] || "Reception")
         }));
       } catch (apiError) {
         setError(apiError.message || "Unable to initialize appointment masters.");
@@ -101,6 +128,8 @@ export function AppointmentsPage() {
     };
   }, [appointments, todayQueue]);
 
+  const canManageAppointments = ["admin", "reception"].includes(user?.role);
+
   const handleFilterChange = (event) => {
     const nextFilters = {
       ...filters,
@@ -123,7 +152,10 @@ export function AppointmentsPage() {
       setFormState((current) => ({
         ...current,
         patientId: value,
-        patientName: selectedPatient ? "" : current.patientName
+        patientName: selectedPatient ? "" : current.patientName,
+        patientAge: selectedPatient ? "" : current.patientAge,
+        patientGender: selectedPatient ? "" : current.patientGender,
+        patientMobile: selectedPatient ? "" : current.patientMobile
       }));
       return;
     }
@@ -146,6 +178,11 @@ export function AppointmentsPage() {
 
   const handleBookAppointment = async (event) => {
     event.preventDefault();
+    if (!canManageAppointments) {
+      setError("Only admin and reception users can book appointments.");
+      return;
+    }
+
     setError("");
     setSuccess("");
 
@@ -155,8 +192,10 @@ export function AppointmentsPage() {
       setFormState((current) => ({
         ...initialForm,
         appointmentDate: current.appointmentDate,
-        doctorId: masters.doctors[0]?.id || "",
-        department: masters.doctors[0]?.department || masters.departments[0] || ""
+        doctorId: current.doctorId || masters.doctors[0]?.id || "",
+        department: (masters.doctors.find((doctor) => doctor.id === current.doctorId)?.department) || masters.doctors[0]?.department || masters.departments[0] || "",
+        type: masters.types?.[0] || "new",
+        source: masters.sources?.includes("Reception") ? "Reception" : (masters.sources?.[0] || "Reception")
       }));
       await loadData(filters);
       const refreshedSlots = await getAvailableSlots(formState.appointmentDate, formState.doctorId);
@@ -167,6 +206,11 @@ export function AppointmentsPage() {
   };
 
   const handleCancel = async (id) => {
+    if (!canManageAppointments) {
+      setError("Only admin and reception users can cancel appointments.");
+      return;
+    }
+
     try {
       await cancelAppointment(id);
       await loadData(filters);
@@ -175,15 +219,47 @@ export function AppointmentsPage() {
     }
   };
 
+  const today = new Date().toISOString().slice(0, 10);
+
   return (
     <DashboardLayout>
       <section className="hero-panel">
         <div className="eyebrow">Appointments</div>
         <h2>Doctor scheduling, department mapping, and front-desk queue control for Shanti-Ratnam.</h2>
         <p>
-          This phase supports patient-linked booking, department-aware doctor mapping, available slots,
-          token generation, and same-day queue visibility for reception and doctors.
+          Slot-based booking follows hospital OPD timings, supports walk-ins with tokens, and keeps live queue
+          visibility for reception and doctors.
         </p>
+      </section>
+
+      <section className="content-card">
+        <div className="section-header">
+          <div>
+            <div className="eyebrow">Policy</div>
+            <h3>Current OPD timings and booking rules</h3>
+          </div>
+        </div>
+        <div className="detail-grid">
+          <article className="content-card inset-card">
+            <h3>OPD timings</h3>
+            <div className="detail-list">
+              <div><strong>Morning:</strong> 09:00 - 13:30</div>
+              <div><strong>Evening:</strong> 15:30 - 19:30</div>
+              <div><strong>Sunday/Holiday:</strong> 09:00 - 12:30</div>
+              <div><strong>Slot duration:</strong> {masters.slotDurationMinutes} minutes</div>
+            </div>
+          </article>
+          <article className="content-card inset-card">
+            <h3>Booking rules</h3>
+            <div className="detail-list">
+              <div><strong>Max/day:</strong> {masters.bookingRules?.maxPatientsPerDay || 100}</div>
+              <div><strong>Advance booking:</strong> Allowed</div>
+              <div><strong>Same-day booking:</strong> Allowed</div>
+              <div><strong>Emergency override:</strong> Not allowed</div>
+              <div><strong>Consultation fee:</strong> Rs. {masters.consultationFee}</div>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section className="stat-grid">
@@ -222,20 +298,39 @@ export function AppointmentsPage() {
             <div className="field field-span-2">
               <label>Existing patient</label>
               <select name="patientId" value={formState.patientId} onChange={handleFormChange}>
-                <option value="">Select patient or leave blank for a new lead</option>
+                <option value="">Select patient or leave blank for a new patient</option>
                 {patients.map((patient) => (
                   <option key={patient.id} value={patient.id}>
-                    {patient.uhid} - {patient.firstName} {patient.lastName}
+                    {patient.uhid || patient.registrationNumber || "UHID"} - {patient.firstName} {patient.lastName}
                   </option>
                 ))}
               </select>
             </div>
 
             {!formState.patientId ? (
-              <div className="field field-span-2">
-                <label>Lead / patient name</label>
-                <input name="patientName" value={formState.patientName} onChange={handleFormChange} />
-              </div>
+              <>
+                <div className="field field-span-2">
+                  <label>Name</label>
+                  <input name="patientName" value={formState.patientName} onChange={handleFormChange} required />
+                </div>
+                <div className="field">
+                  <label>Age</label>
+                  <input name="patientAge" type="number" min="1" value={formState.patientAge} onChange={handleFormChange} required />
+                </div>
+                <div className="field">
+                  <label>Gender</label>
+                  <select name="patientGender" value={formState.patientGender} onChange={handleFormChange} required>
+                    <option value="">Select</option>
+                    <option value="male">male</option>
+                    <option value="female">female</option>
+                    <option value="other">other</option>
+                  </select>
+                </div>
+                <div className="field field-span-2">
+                  <label>Mobile</label>
+                  <input name="patientMobile" value={formState.patientMobile} onChange={handleFormChange} minLength={10} required />
+                </div>
+              </>
             ) : null}
 
             <div className="field">
@@ -265,6 +360,7 @@ export function AppointmentsPage() {
               <input
                 name="appointmentDate"
                 type="date"
+                min={today}
                 value={formState.appointmentDate}
                 onChange={handleFormChange}
               />
@@ -305,16 +401,17 @@ export function AppointmentsPage() {
             </div>
 
             <div className="field field-span-2">
-              <label>Chief complaint</label>
-              <input name="chiefComplaint" value={formState.chiefComplaint} onChange={handleFormChange} />
+              <label>Problem</label>
+              <input name="chiefComplaint" value={formState.chiefComplaint} onChange={handleFormChange} required />
             </div>
 
             {error ? <div className="error-text field-span-2">{error}</div> : null}
             {success ? <div className="success-text field-span-2">{success}</div> : null}
 
             <div className="field-span-2 action-row">
-              <Button type="submit">Book Appointment</Button>
+              <Button type="submit" disabled={!canManageAppointments}>Book Appointment</Button>
             </div>
+            {!canManageAppointments ? <div className="empty-state field-span-2">Appointment booking and cancellation are limited to admin and reception roles.</div> : null}
           </form>
         </article>
 
@@ -333,6 +430,7 @@ export function AppointmentsPage() {
                   <strong>Token {appointment.tokenNumber}</strong>
                   <div className="timeline-copy">{appointment.patientName}</div>
                   <div className="timeline-copy">{appointment.department}</div>
+                  <div className="timeline-copy">{appointment.appointmentTime}</div>
                 </div>
                 <span className={`status-pill ${appointment.status}`}>{appointment.status}</span>
               </div>
@@ -400,7 +498,7 @@ export function AppointmentsPage() {
                     <td><span className={`status-pill ${appointment.status}`}>{appointment.status}</span></td>
                     <td>
                       {appointment.status !== "cancelled" ? (
-                        <button className="table-link button-link" type="button" onClick={() => handleCancel(appointment.id)}>
+                        <button className="table-link button-link" type="button" onClick={() => handleCancel(appointment.id)} disabled={!canManageAppointments}>
                           Cancel
                         </button>
                       ) : (

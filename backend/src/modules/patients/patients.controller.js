@@ -30,18 +30,18 @@ export function searchPatientsHandler(req, res, next) {
   }
 }
 
-export function createPatientHandler(req, res, next) {
+export async function createPatientHandler(req, res, next) {
   try {
-    const patient = createPatient(req.body, req.user.sub);
+    const patient = await createPatient(req.body, req.user.sub);
     res.status(201).json({ item: patient, message: "Patient registered successfully." });
   } catch (error) {
     next(error);
   }
 }
 
-export function updatePatientHandler(req, res, next) {
+export async function updatePatientHandler(req, res, next) {
   try {
-    res.json({ item: updatePatient(req.params.id, req.body), message: "Patient updated successfully." });
+    res.json({ item: await updatePatient(req.params.id, req.body), message: "Patient updated successfully." });
   } catch (error) {
     next(error);
   }

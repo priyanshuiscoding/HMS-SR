@@ -13,5 +13,13 @@ export const env = {
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || "change_me_to_a_long_random_secret",
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || "change_me_to_a_different_long_random_secret",
   jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES || "8h",
-  jwtRefreshExpires: process.env.JWT_REFRESH_EXPIRES || "30d"
+  jwtRefreshExpires: process.env.JWT_REFRESH_EXPIRES || "30d",
+  persistenceEnabled: String(process.env.PERSISTENCE_ENABLED || "true").toLowerCase() === "true",
+  databaseUrl: process.env.DATABASE_URL || "",
+  dbHost: process.env.DB_HOST || "localhost",
+  dbPort: Number(process.env.DB_PORT || 5432),
+  dbName: process.env.DB_NAME || "hms_db",
+  dbUser: process.env.DB_USER || "hms_user",
+  dbPassword: process.env.DB_PASSWORD || "hms_password",
+  dbSsl: String(process.env.DB_SSL || "false").toLowerCase() === "true"
 };

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../components/common/Button.jsx";
 import { DashboardLayout } from "../../components/layout/DashboardLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import {
   getInventoryBatches,
   getInventoryMasters,
@@ -21,18 +22,20 @@ const initialForm = {
 };
 
 export function InventoryPage() {
+  const { user } = useAuth();
   const [masters, setMasters] = useState({ medicines: [], suppliers: [] });
   const [batches, setBatches] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function loadAll() {
+  async function loadAll(searchValue = search) {
     try {
       const [mastersResponse, batchesResponse, transactionsResponse] = await Promise.all([
         getInventoryMasters(),
-        getInventoryBatches(),
+        getInventoryBatches(searchValue ? { search: searchValue } : {}),
         getInventoryTransactions()
       ]);
 
@@ -46,17 +49,23 @@ export function InventoryPage() {
   }
 
   useEffect(() => {
-    loadAll();
+    loadAll("");
   }, []);
 
   const stats = useMemo(() => {
     return {
       batches: batches.length,
       suppliers: masters.suppliers.length,
+      importedMedicines: masters.godownImport?.medicineCount || 0,
       receipts: transactions.filter((item) => item.type === "receipt").length,
-      issues: transactions.filter((item) => item.type === "issue").length
+      issues: transactions.filter((item) => ["issue", "therapy_issue"].includes(item.type)).length
     };
   }, [batches, masters.suppliers.length, transactions]);
+
+  const handleSearchSubmit = async (event) => {
+    event.preventDefault();
+    await loadAll(search);
+  };
 
   const handleChange = (event) => {
     setForm((current) => ({
@@ -67,6 +76,11 @@ export function InventoryPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!["admin", "pharmacy"].includes(user?.role)) {
+      setError("Only admin and pharmacy users can receive stock.");
+      return;
+    }
 
     try {
       await receiveInventoryStock(form);
@@ -100,6 +114,11 @@ export function InventoryPage() {
           <div className="stat-label">Suppliers</div>
           <div className="stat-value">{stats.suppliers}</div>
           <div className="stat-note">Sample master list</div>
+        </article>
+        <article className="stat-card">
+          <div className="stat-label">Godown Medicines</div>
+          <div className="stat-value">{stats.importedMedicines}</div>
+          <div className="stat-note">Imported from the March 14 stock workbook</div>
         </article>
         <article className="stat-card">
           <div className="stat-label">Receipts</div>
@@ -169,7 +188,7 @@ export function InventoryPage() {
               <input name="note" value={form.note} onChange={handleChange} />
             </div>
             <div className="field field-span-2">
-              <Button type="submit">Receive Batch</Button>
+              <Button type="submit" disabled={!["admin", "pharmacy"].includes(user?.role)}>Receive Batch</Button>
             </div>
           </form>
         </article>
@@ -192,8 +211,8 @@ export function InventoryPage() {
               <div className="timeline-copy">Dispensing from pharmacy writes stock movement history automatically.</div>
             </div>
             <div className="quick-action">
-              <strong>Easy replacement later</strong>
-              <div className="timeline-copy">All values here are sample masters and can be replaced once hospital data arrives.</div>
+              <strong>Godown import loaded</strong>
+              <div className="timeline-copy">{masters.godownImport?.batchCount || 0} opening stock lines from {masters.godownImport?.sourceFile || "the workbook"} are now part of HMS inventory.</div>
             </div>
           </div>
         </aside>
@@ -208,15 +227,27 @@ export function InventoryPage() {
             </div>
           </div>
 
+          <form className="toolbar" onSubmit={handleSearchSubmit}>
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by medicine, company, location, raw quantity, or batch"
+            />
+            <Button type="submit">Search</Button>
+          </form>
+
           <div className="table-shell">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Medicine</th>
+                  <th>Company</th>
+                  <th>Location</th>
                   <th>Batch</th>
-                  <th>Expiry</th>
-                  <th>Received</th>
+                  <th>Raw Qty</th>
                   <th>Available</th>
+                  <th>Expiry</th>
                   <th>Prices</th>
                 </tr>
               </thead>
@@ -224,10 +255,12 @@ export function InventoryPage() {
                 {batches.map((item) => (
                   <tr key={item.id}>
                     <td>{item.medicineName}</td>
+                    <td>{item.company || "-"}</td>
+                    <td>{item.locationMap || "-"}</td>
                     <td>{item.batchNumber}</td>
-                    <td>{item.expiryDate}</td>
-                    <td>{item.quantityReceived}</td>
+                    <td>{item.rawQuantity || item.quantityReceived}</td>
                     <td>{item.quantityAvailable}</td>
+                    <td>{item.expiryDate || "-"}</td>
                     <td>Rs. {item.purchasePrice} / Rs. {item.sellingPrice}</td>
                   </tr>
                 ))}

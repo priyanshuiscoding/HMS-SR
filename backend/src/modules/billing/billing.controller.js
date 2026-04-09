@@ -1,4 +1,20 @@
-import { collectPayment, createBill, getBillDetails, getBillingSummary, listBills } from "./billing.service.js";
+import {
+  collectPayment,
+  createBill,
+  getBillDetails,
+  getBillingMasters,
+  getBillingSummary,
+  listBills,
+  listPayments
+} from "./billing.service.js";
+
+export function billingMastersHandler(_req, res, next) {
+  try {
+    res.json(getBillingMasters());
+  } catch (error) {
+    next(error);
+  }
+}
 
 export function listBillsHandler(req, res, next) {
   try {
@@ -8,9 +24,17 @@ export function listBillsHandler(req, res, next) {
   }
 }
 
+export function listPaymentsHandler(req, res, next) {
+  try {
+    res.json({ items: listPayments(req.query) });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export function createBillHandler(req, res, next) {
   try {
-    res.status(201).json({ item: createBill(req.body), message: "Bill created successfully." });
+    res.status(201).json({ item: createBill({ ...req.body, createdBy: req.user.sub }), message: "Bill created successfully." });
   } catch (error) {
     next(error);
   }

@@ -145,6 +145,24 @@ export async function getAvailableSlots(date, doctorId) {
   return parseResponse(response);
 }
 
+export async function getUsers() {
+  const response = await fetch(`${API_BASE_URL}/users`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getUsersSummary() {
+  const response = await fetch(`${API_BASE_URL}/users/summary`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
 export async function cancelAppointment(id) {
   const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
     method: "DELETE",
@@ -265,6 +283,74 @@ export async function createLabOrder(payload) {
   return parseResponse(response);
 }
 
+export async function getLabSummary() {
+  const response = await fetch(`${API_BASE_URL}/lab/summary`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getLabOrders(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      query.set(key, value);
+    }
+  });
+
+  const response = await fetch(`${API_BASE_URL}/lab/orders${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getLabOrder(id) {
+  const response = await fetch(`${API_BASE_URL}/lab/orders/${id}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function collectLabSample(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/lab/orders/${id}/sample-collection`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function saveLabResults(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/lab/orders/${id}/results`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function createLabBill(id, payload = {}) {
+  const response = await fetch(`${API_BASE_URL}/lab/orders/${id}/bill`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
 export async function getBills(params = {}) {
   const query = new URLSearchParams();
 
@@ -300,6 +386,30 @@ export async function getBillingSummary() {
   return parseResponse(response);
 }
 
+export async function getBillingMasters() {
+  const response = await fetch(`${API_BASE_URL}/billing/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPayments(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/billing/payments${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
 export async function getBill(id) {
   const response = await fetch(`${API_BASE_URL}/billing/bills/${id}`, {
     headers: createHeaders(),
@@ -311,6 +421,92 @@ export async function getBill(id) {
 
 export async function collectBillPayment(id, payload) {
   const response = await fetch(`${API_BASE_URL}/billing/bills/${id}/payments`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaTherapies() {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/therapies`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaMasters() {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaSummary() {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/summary`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaSchedules(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      query.set(key, value);
+    }
+  });
+
+  const response = await fetch(`${API_BASE_URL}/panchkarma/schedule${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaSchedule(id) {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/schedule/${id}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function createPanchkarmaSchedule(payload) {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/schedule`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function startPanchkarmaSession(id, payload = {}) {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/schedule/${id}/start`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function completePanchkarmaSession(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/panchkarma/schedule/${id}/complete`, {
     method: "POST",
     headers: createHeaders(),
     credentials: "include",
@@ -428,3 +624,266 @@ export async function receiveInventoryStock(payload) {
 
   return parseResponse(response);
 }
+
+
+export async function getIpdSummary() {
+  const response = await fetch(`${API_BASE_URL}/ipd/summary`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getIpdMasters() {
+  const response = await fetch(`${API_BASE_URL}/ipd/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getIpdAdmissions(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      query.set(key, value);
+    }
+  });
+
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getIpdAdmission(id) {
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions/${id}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function createIpdAdmission(payload) {
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function addIpdNote(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions/${id}/notes`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function addIpdVitals(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions/${id}/vitals`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function dischargeIpdAdmission(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/ipd/admissions/${id}/discharge`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getRoomMasters() {
+  const response = await fetch(`${API_BASE_URL}/rooms/masters`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getRooms(params = {}) {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/rooms${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getRoomsAvailability() {
+  const response = await fetch(`${API_BASE_URL}/rooms/availability`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getRoom(id) {
+  const response = await fetch(`${API_BASE_URL}/rooms/${id}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function createRoom(payload) {
+  const response = await fetch(`${API_BASE_URL}/rooms`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function assignRoomBed(roomId, bedId, payload) {
+  const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/beds/${bedId}/assign`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function dischargeRoomBed(roomId, bedId, payload) {
+  const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/beds/${bedId}/discharge`, {
+    method: "POST",
+    headers: createHeaders(),
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function getReportsOverview(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/overview${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getDailyOpdReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/daily-opd${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getIpdCensusReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/ipd-census${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getRevenueReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/revenue${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPharmacySalesReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/pharmacy-sales${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getLabWorkloadReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/lab-workload${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+
+export async function getPanchkarmaStatsReport(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const response = await fetch(`${API_BASE_URL}/reports/panchkarma-stats${query.toString() ? `?${query.toString()}` : ""}`, {
+    headers: createHeaders(),
+    credentials: "include"
+  });
+
+  return parseResponse(response);
+}
+

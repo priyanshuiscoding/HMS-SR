@@ -1,3 +1,4 @@
+import { persistPatients } from "../../data/persistence.js";
 import { db, createId, nextUhid } from "../../data/store.js";
 
 function createError(message, statusCode = 400) {
@@ -11,6 +12,39 @@ function normalize(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) {
+    return "";
+  }
+
+  const birthDate = new Date(dateOfBirth);
+  if (Number.isNaN(birthDate.getTime())) {
+    return "";
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+function buildAddress(payload) {
+  const segments = [payload.houseStreet, payload.areaVillage, payload.cityDistrict || payload.city, payload.state]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  return payload.address?.trim() || segments.join(", ");
+}
+
+function nextRegistrationNumber() {
+  return `REG-${new Date().getFullYear()}-${String(db.patients.length + 1).padStart(5, "0")}`;
+}
+
 export function listPatients(query = {}) {
   const search = normalize(query.search);
   const city = normalize(query.city);
@@ -21,9 +55,12 @@ export function listPatients(query = {}) {
     items = items.filter((patient) =>
       [
         patient.uhid,
+        patient.registrationNumber,
+        patient.opdIpdNumber,
         patient.firstName,
         patient.lastName,
         patient.phone,
+        patient.idNumber,
         `${patient.firstName} ${patient.lastName}`
       ]
         .join(" ")
@@ -33,10 +70,10 @@ export function listPatients(query = {}) {
   }
 
   if (city) {
-    items = items.filter((patient) => normalize(patient.city) === city);
+    items = items.filter((patient) => normalize(patient.cityDistrict || patient.city) === city);
   }
 
-  return items.sort((a, b) => b.registrationDate.localeCompare(a.registrationDate));
+  return items.sort((a, b) => `${b.registrationDate} ${b.registrationTime || ""}`.localeCompare(`${a.registrationDate} ${a.registrationTime || ""}`));
 }
 
 export function getPatientById(id) {
@@ -68,9 +105,17 @@ export function getPatientHistory(id) {
     .filter((prescription) => prescription.patientId === id)
     .sort((a, b) => b.prescriptionDate.localeCompare(a.prescriptionDate));
 
+  const ipdAdmissions = db.ipdAdmissions
+    .filter((admission) => admission.patientId === id)
+    .sort((a, b) => `${b.admissionDate} ${b.admissionTime || ""}`.localeCompare(`${a.admissionDate} ${a.admissionTime || ""}`));
+
   const labOrders = db.labOrders
     .filter((order) => order.patientId === id)
     .sort((a, b) => b.orderDate.localeCompare(a.orderDate));
+
+  const panchkarmaSchedules = db.panchkarmaSchedules
+    .filter((schedule) => schedule.patientId === id)
+    .sort((a, b) => `${b.scheduledDate} ${b.scheduledTime || ""}`.localeCompare(`${a.scheduledDate} ${a.scheduledTime || ""}`));
 
   const bills = db.bills
     .filter((bill) => bill.patientId === id)
@@ -117,6 +162,14 @@ export function getPatientHistory(id) {
       summary: "Prescription issued",
       detail: prescription.diagnosis
     })),
+    ...ipdAdmissions.map((admission) => ({
+      id: `ipd-${admission.id}`,
+      type: "ipd_admission",
+      date: admission.dischargeSummary?.dischargeDate || admission.admissionDate,
+      title: admission.admissionNumber,
+      summary: `IPD ${admission.status} - ${admission.reasonForAdmission}`,
+      detail: `${admission.diagnosis || "Clinical observation"}${admission.dischargeSummary?.billId ? ` | Bill: ${admission.dischargeSummary.billId}` : ""}`
+    })),
     ...labOrders.map((order) => ({
       id: `lab-${order.id}`,
       type: "lab_order",
@@ -124,6 +177,14 @@ export function getPatientHistory(id) {
       title: order.orderNumber,
       summary: `Lab order - ${order.status}`,
       detail: order.tests.map((test) => test.testName).join(", ")
+    })),
+    ...panchkarmaSchedules.map((schedule) => ({
+      id: `pk-${schedule.id}`,
+      type: "panchkarma",
+      date: schedule.scheduledDate,
+      title: schedule.scheduleNumber,
+      summary: `${schedule.therapyName} - ${schedule.status}`,
+      detail: schedule.outcome || schedule.complaint || "Panchkarma session scheduled"
     })),
     ...bills.map((bill) => ({
       id: `bill-${bill.id}`,
@@ -157,7 +218,9 @@ export function getPatientHistory(id) {
     opdVisits,
     assessments,
     prescriptions,
+    ipdAdmissions,
     labOrders,
+    panchkarmaSchedules,
     bills,
     dispensations,
     payments,
@@ -165,9 +228,13 @@ export function getPatientHistory(id) {
   };
 }
 
-export function createPatient(payload, createdBy) {
-  if (!payload.firstName || !payload.lastName || !payload.phone || !payload.dateOfBirth || !payload.gender || !payload.address) {
-    throw createError("First name, last name, phone, date of birth, gender, and address are required.");
+export async function createPatient(payload, createdBy) {
+  if (!payload.firstName || !payload.lastName || !payload.phone || !payload.dateOfBirth || !payload.gender) {
+    throw createError("First name, last name, phone, date of birth, and gender are required.");
+  }
+
+  if (!payload.houseStreet && !payload.address) {
+    throw createError("House/street or address is required.");
   }
 
   const phoneExists = db.patients.some((patient) => patient.phone === payload.phone);
@@ -176,52 +243,95 @@ export function createPatient(payload, createdBy) {
     throw createError("A patient with this phone number already exists.");
   }
 
+  const registrationDate = new Date().toISOString().slice(0, 10);
+  const registrationTime = new Date().toTimeString().slice(0, 5);
+  const address = buildAddress(payload);
+  const cityDistrict = payload.cityDistrict?.trim() || payload.city?.trim() || "Sagar";
+
   const patient = {
     id: createId(),
     uhid: nextUhid(),
+    registrationNumber: nextRegistrationNumber(),
+    opdIpdNumber: payload.opdIpdNumber?.trim() || "",
+    registrationDate,
+    registrationTime,
+    patientType: payload.patientType || "new",
+    title: payload.title || "Mr",
     firstName: payload.firstName.trim(),
     lastName: payload.lastName.trim(),
-    dateOfBirth: payload.dateOfBirth,
+    fullName: `${payload.firstName.trim()} ${payload.lastName.trim()}`,
     gender: payload.gender,
+    dateOfBirth: payload.dateOfBirth,
+    ageYears: calculateAge(payload.dateOfBirth),
     bloodGroup: payload.bloodGroup || "",
+    maritalStatus: payload.maritalStatus || "",
+    occupation: payload.occupation || "",
     phone: payload.phone.trim(),
     altPhone: payload.altPhone || "",
     email: payload.email || "",
-    address: payload.address.trim(),
-    city: payload.city || "Sagar",
+    houseStreet: payload.houseStreet?.trim() || "",
+    areaVillage: payload.areaVillage?.trim() || "",
+    cityDistrict,
+    city: cityDistrict,
     state: payload.state || "Madhya Pradesh",
     pincode: payload.pincode || "",
+    address,
+    idType: payload.idType || "",
+    idNumber: payload.idNumber || "",
     emergencyContactName: payload.emergencyContactName || "",
     emergencyContactPhone: payload.emergencyContactPhone || "",
-    registrationDate: new Date().toISOString().slice(0, 10),
     referredBy: payload.referredBy || "Front Desk",
     createdBy
   };
 
   db.patients.unshift(patient);
+  await persistPatients();
   return patient;
 }
 
-export function updatePatient(id, payload) {
+export async function updatePatient(id, payload) {
   const patient = getPatientById(id);
+  const nextDateOfBirth = payload.dateOfBirth ?? patient.dateOfBirth;
+  const nextCityDistrict = payload.cityDistrict ?? payload.city ?? patient.cityDistrict ?? patient.city;
 
   Object.assign(patient, {
+    registrationNumber: payload.registrationNumber ?? patient.registrationNumber,
+    opdIpdNumber: payload.opdIpdNumber ?? patient.opdIpdNumber,
+    patientType: payload.patientType ?? patient.patientType,
+    title: payload.title ?? patient.title,
     firstName: payload.firstName ?? patient.firstName,
     lastName: payload.lastName ?? patient.lastName,
-    dateOfBirth: payload.dateOfBirth ?? patient.dateOfBirth,
+    fullName: `${payload.firstName ?? patient.firstName} ${payload.lastName ?? patient.lastName}`,
+    dateOfBirth: nextDateOfBirth,
+    ageYears: calculateAge(nextDateOfBirth),
     gender: payload.gender ?? patient.gender,
     bloodGroup: payload.bloodGroup ?? patient.bloodGroup,
+    maritalStatus: payload.maritalStatus ?? patient.maritalStatus,
+    occupation: payload.occupation ?? patient.occupation,
     phone: payload.phone ?? patient.phone,
     altPhone: payload.altPhone ?? patient.altPhone,
     email: payload.email ?? patient.email,
-    address: payload.address ?? patient.address,
-    city: payload.city ?? patient.city,
+    houseStreet: payload.houseStreet ?? patient.houseStreet,
+    areaVillage: payload.areaVillage ?? patient.areaVillage,
+    address: buildAddress({
+      address: payload.address ?? patient.address,
+      houseStreet: payload.houseStreet ?? patient.houseStreet,
+      areaVillage: payload.areaVillage ?? patient.areaVillage,
+      cityDistrict: nextCityDistrict,
+      state: payload.state ?? patient.state,
+      city: nextCityDistrict
+    }),
+    cityDistrict: nextCityDistrict,
+    city: nextCityDistrict,
     state: payload.state ?? patient.state,
     pincode: payload.pincode ?? patient.pincode,
+    idType: payload.idType ?? patient.idType,
+    idNumber: payload.idNumber ?? patient.idNumber,
     emergencyContactName: payload.emergencyContactName ?? patient.emergencyContactName,
     emergencyContactPhone: payload.emergencyContactPhone ?? patient.emergencyContactPhone,
     referredBy: payload.referredBy ?? patient.referredBy
   });
 
+  await persistPatients();
   return patient;
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "../../components/common/Button.jsx";
 import { DashboardLayout } from "../../components/layout/DashboardLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import {
   completeOpdVisit,
   createBill,
@@ -75,6 +76,7 @@ const initialBilling = {
 };
 
 export function OpdPage() {
+  const { user } = useAuth();
   const [queue, setQueue] = useState([]);
   const [masters, setMasters] = useState({
     doctors: [],
@@ -160,6 +162,10 @@ export function OpdPage() {
       done: queue.filter((item) => item.visitStatus === "completed").length
     };
   }, [queue]);
+  const canStartVisit = ["admin", "reception", "doctor"].includes(user?.role);
+  const canSaveVitals = ["admin", "reception", "doctor"].includes(user?.role);
+  const canClinicalDocument = ["admin", "doctor"].includes(user?.role);
+  const canCreateBilling = ["admin", "doctor", "reception"].includes(user?.role);
 
   const handleDoctorFilter = async (event) => {
     const doctorId = event.target.value;
@@ -168,6 +174,11 @@ export function OpdPage() {
   };
 
   const startConsultation = async (queueItem) => {
+    if (!canStartVisit) {
+      setError("You do not have permission to start consultations.");
+      return;
+    }
+
     setError("");
     setMessage("");
 
@@ -259,6 +270,11 @@ export function OpdPage() {
       return;
     }
 
+    if (!canSaveVitals) {
+      setError("You do not have permission to record vitals.");
+      return;
+    }
+
     setError("");
     try {
       await saveOpdVitals(visitPayload.visit.id, vitalsForm);
@@ -272,6 +288,11 @@ export function OpdPage() {
 
   const saveAssessmentAction = async () => {
     if (!visitPayload?.visit?.id) {
+      return;
+    }
+
+    if (!canClinicalDocument) {
+      setError("You do not have permission to save the Ayurvedic assessment.");
       return;
     }
 
@@ -290,6 +311,11 @@ export function OpdPage() {
       return;
     }
 
+    if (!canClinicalDocument) {
+      setError("You do not have permission to save prescriptions.");
+      return;
+    }
+
     setError("");
     try {
       await savePrescription(visitPayload.visit.id, prescriptionForm);
@@ -302,6 +328,11 @@ export function OpdPage() {
 
   const completeConsultationAction = async () => {
     if (!visitPayload?.visit?.id) {
+      return;
+    }
+
+    if (!canClinicalDocument) {
+      setError("You do not have permission to complete consultations.");
       return;
     }
 
@@ -318,6 +349,11 @@ export function OpdPage() {
 
   const createLabOrderAction = async () => {
     if (!visitPayload?.visit?.id) {
+      return;
+    }
+
+    if (!canClinicalDocument) {
+      setError("You do not have permission to create lab orders from OPD.");
       return;
     }
 
@@ -341,6 +377,16 @@ export function OpdPage() {
 
   const createBillAction = async () => {
     if (!visitPayload?.visit?.id) {
+      return;
+    }
+
+    if (!canCreateBilling) {
+      setError("You do not have permission to create OPD bills.");
+      return;
+    }
+
+    if (visitPayload.bills?.some((bill) => bill.billType === "opd")) {
+      setError("An OPD bill has already been generated for this visit.");
       return;
     }
 
@@ -461,7 +507,7 @@ export function OpdPage() {
                   <span className={`status-pill ${item.visitStatus || item.status}`}>
                     {item.visitStatus || item.status}
                   </span>
-                  <Button variant="secondary" onClick={() => startConsultation(item)}>
+                  <Button variant="secondary" onClick={() => startConsultation(item)} disabled={!canStartVisit}>
                     {item.visitId ? "Open" : "Start"}
                   </Button>
                 </div>
@@ -533,7 +579,7 @@ export function OpdPage() {
                     <div className="eyebrow">Vitals</div>
                     <h3>Clinical vitals capture</h3>
                   </div>
-                  <Button onClick={saveVitalsAction}>Save Vitals</Button>
+                  <Button onClick={saveVitalsAction} disabled={!canSaveVitals}>Save Vitals</Button>
                 </div>
 
                 <div className="form-grid">
@@ -574,7 +620,7 @@ export function OpdPage() {
                     <div className="eyebrow">Ayurvedic Assessment</div>
                     <h3>Prakriti and clinical observations</h3>
                   </div>
-                  <Button onClick={saveAssessmentAction}>Save Assessment</Button>
+                  <Button onClick={saveAssessmentAction} disabled={!canClinicalDocument}>Save Assessment</Button>
                 </div>
 
                 <div className="form-grid">
@@ -648,8 +694,8 @@ export function OpdPage() {
                     <h3>Starter prescription builder</h3>
                   </div>
                   <div className="action-row">
-                    <Button variant="secondary" onClick={addMedicineRow}>Add Medicine</Button>
-                    <Button onClick={savePrescriptionAction}>Save Prescription</Button>
+                    <Button variant="secondary" onClick={addMedicineRow} disabled={!canClinicalDocument}>Add Medicine</Button>
+                    <Button onClick={savePrescriptionAction} disabled={!canClinicalDocument}>Save Prescription</Button>
                   </div>
                 </div>
 
@@ -789,7 +835,7 @@ export function OpdPage() {
                     <div className="eyebrow">Lab Hook</div>
                     <h3>Order lab tests from consultation</h3>
                   </div>
-                  <Button onClick={createLabOrderAction}>Create Lab Order</Button>
+                  <Button onClick={createLabOrderAction} disabled={!canClinicalDocument}>Create Lab Order</Button>
                 </div>
 
                 <div className="form-grid">
@@ -839,7 +885,7 @@ export function OpdPage() {
                     <div className="eyebrow">Billing Hook</div>
                     <h3>Create OPD bill from consultation</h3>
                   </div>
-                  <Button onClick={createBillAction}>Generate Bill</Button>
+                  <Button onClick={createBillAction} disabled={!canCreateBilling || visitPayload.bills?.some((bill) => bill.billType === "opd")}>Generate Bill</Button>
                 </div>
 
                 <div className="form-grid">
@@ -890,7 +936,7 @@ export function OpdPage() {
                     <div className="eyebrow">Close Visit</div>
                     <h3>Complete consultation</h3>
                   </div>
-                  <Button onClick={completeConsultationAction}>Complete Visit</Button>
+                  <Button onClick={completeConsultationAction} disabled={!canClinicalDocument}>Complete Visit</Button>
                 </div>
                 <p className="page-copy">
                   Use this when the consultation, advice, and prescription have been finalized.

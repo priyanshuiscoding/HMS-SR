@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 import { departments, demoUsers, roles } from "../config/constants.js";
+import { godownInventoryImport } from "./godownInventory.generated.js";
 
 function createPatientNumber(number) {
   return String(number).padStart(4, "0");
@@ -15,9 +16,13 @@ export function createId() {
 }
 
 const doctorLookup = demoUsers.filter((user) => user.role === roles.DOCTOR);
+const primaryAdmin = demoUsers.find((user) => user.role === roles.ADMIN) || demoUsers[0];
+const primaryReceptionist = demoUsers.find((user) => user.role === roles.RECEPTION) || primaryAdmin;
+const primaryPharmacist = demoUsers.find((user) => user.role === roles.PHARMACY) || primaryAdmin;
 const today = new Date().toISOString().slice(0, 10);
 const meeraPatientId = createId();
 const rajeshPatientId = createId();
+const sambhaviPatientId = createId();
 const meeraAppointmentId = createId();
 const meeraVisitId = createId();
 const meeraAssessmentId = createId();
@@ -26,6 +31,17 @@ const meeraLabOrderId = createId();
 const meeraBillId = createId();
 const meeraDispenseId = createId();
 const meeraPaymentId = createId();
+const deluxeRoomId = createId();
+const panchkarmaRoomId = createId();
+const generalWardRoomId = createId();
+const generalWardBedTwoId = createId();
+const rajeshAdmissionId = createId();
+const abhyangaTherapyId = "therapy-001";
+const patraPindaTherapyId = "therapy-002";
+const shirodharaTherapyId = "therapy-003";
+const katiBastiTherapyId = "therapy-004";
+const meeraTherapyScheduleId = createId();
+const rajeshTherapyScheduleId = createId();
 
 export const db = {
   patients: [
@@ -48,7 +64,7 @@ export const db = {
       emergencyContactPhone: "9876543202",
       registrationDate: today,
       referredBy: "Website",
-      createdBy: demoUsers[1].id
+      createdBy: primaryReceptionist.id
     },
     {
       id: rajeshPatientId,
@@ -69,7 +85,45 @@ export const db = {
       emergencyContactPhone: "9876543204",
       registrationDate: today,
       referredBy: "Walk-in",
-      createdBy: demoUsers[1].id
+      createdBy: primaryReceptionist.id
+    },
+    {
+      id: sambhaviPatientId,
+      uhid: `SRAIIMS-${currentYear()}-${createPatientNumber(3)}`,
+      registrationNumber: "5594",
+      opdIpdNumber: "5594",
+      patientType: "follow_up",
+      title: "Miss",
+      firstName: "Sambhavi",
+      lastName: "Mishra",
+      fullName: "Sambhavi Mishra",
+      dateOfBirth: "",
+      ageYears: 17,
+      gender: "female",
+      bloodGroup: "",
+      maritalStatus: "single",
+      occupation: "",
+      phone: "9891771615",
+      altPhone: "",
+      email: "",
+      houseStreet: "",
+      areaVillage: "",
+      address: "",
+      cityDistrict: "",
+      city: "",
+      state: "",
+      pincode: "",
+      emergencyContactName: "",
+      emergencyContactPhone: "",
+      registrationDate: "2026-03-29",
+      registrationTime: "12:39",
+      referredBy: "Imported from OPD case sheet PDF",
+      createdBy: primaryReceptionist.id,
+      sourceDocument: "patient data/5594 29-Mar-2026 12-39-48.pdf",
+      clinicalNotes: [
+        "Scanned OPD case sheet OCR extracted.",
+        "Readable details confirmed: female, age 17, reg/UHID 5594, mobile 9891771615.",
+        "Handwritten complaints suggest weakness, fatigue/tiredness, mood changes, palpitations, constipation, headache, and white discharge, but some text remains partially unclear."]
     }
   ],
   appointments: [
@@ -86,7 +140,7 @@ export const db = {
       status: "confirmed",
       chiefComplaint: "Neck pain and migraine episodes",
       tokenNumber: 1,
-      bookedBy: demoUsers[1].id,
+      bookedBy: primaryReceptionist.id,
       source: "Website",
       smsSent: false
     },
@@ -103,7 +157,7 @@ export const db = {
       status: "scheduled",
       chiefComplaint: "Lifestyle correction review",
       tokenNumber: 2,
-      bookedBy: demoUsers[1].id,
+      bookedBy: primaryReceptionist.id,
       source: "Call",
       smsSent: false
     },
@@ -120,7 +174,7 @@ export const db = {
       status: "completed",
       chiefComplaint: "Persistent cervical stiffness with headache flare",
       tokenNumber: 3,
-      bookedBy: demoUsers[1].id,
+      bookedBy: primaryReceptionist.id,
       source: "Website",
       smsSent: true
     }
@@ -144,7 +198,7 @@ export const db = {
       vitalsSpo2: 98,
       vitalsRr: 17,
       status: "completed",
-      consultationFee: 500
+      consultationFee: 200
     }
   ],
   ayurvedaAssessments: [
@@ -267,13 +321,13 @@ export const db = {
       visitId: meeraVisitId,
       billType: "opd",
       billDate: today,
-      subtotal: 850,
+      subtotal: 550,
       discountAmount: 0,
       taxAmount: 0,
-      totalAmount: 850,
-      paidAmount: 850,
+      totalAmount: 550,
+      paidAmount: 550,
       paymentStatus: "paid",
-      createdBy: demoUsers[6]?.id || demoUsers[0].id,
+      createdBy: primaryAdmin.id,
       notes: "Follow-up consultation with CBC charge included.",
       items: [
         {
@@ -281,8 +335,8 @@ export const db = {
           description: "OPD Consultation Fee",
           category: "consultation",
           quantity: 1,
-          unitPrice: 500,
-          amount: 500
+          unitPrice: 200,
+          amount: 200
         },
         {
           id: createId(),
@@ -303,11 +357,257 @@ export const db = {
       patientId: meeraPatientId,
       patientName: "Meera Sharma",
       paymentDate: `${today}T11:25:00`,
-      amount: 850,
+      amount: 550,
       paymentMode: "upi",
       referenceNumber: "UPI-SR-10231",
-      receivedBy: demoUsers[8]?.id || demoUsers[0].id,
+      receivedBy: primaryAdmin.id,
       note: "Collected at billing desk after consultation."
+    }
+  ],
+  rooms: [
+    {
+      id: deluxeRoomId,
+      roomNumber: "A-101",
+      ward: "Ayurveda Deluxe",
+      roomType: "deluxe",
+      floor: "First Floor",
+      chargePerDay: 2200,
+      nursingStation: "North Wing",
+      notes: "Attached washroom and attendant chair."
+    },
+    {
+      id: panchkarmaRoomId,
+      roomNumber: "PK-201",
+      ward: "Panchkarma Therapy",
+      roomType: "therapy",
+      floor: "Second Floor",
+      chargePerDay: 1800,
+      nursingStation: "Therapy Block",
+      notes: "Suitable for supervised therapy recovery."
+    },
+    {
+      id: generalWardRoomId,
+      roomNumber: "GW-001",
+      ward: "General Ward",
+      roomType: "general",
+      floor: "Ground Floor",
+      chargePerDay: 950,
+      nursingStation: "Main Ward",
+      notes: "Two-bed monitored general ward."
+    }
+  ],
+  beds: [
+    {
+      id: createId(),
+      roomId: deluxeRoomId,
+      bedNumber: "A-101-1",
+      bedLabel: "Bed 1",
+      status: "available",
+      patientId: null,
+      patientName: "",
+      assignedAt: "",
+      expectedDischargeDate: "",
+      note: ""
+    },
+    {
+      id: createId(),
+      roomId: panchkarmaRoomId,
+      bedNumber: "PK-201-1",
+      bedLabel: "Therapy Recovery Bed",
+      status: "available",
+      patientId: null,
+      patientName: "",
+      assignedAt: "",
+      expectedDischargeDate: "",
+      note: ""
+    },
+    {
+      id: createId(),
+      roomId: generalWardRoomId,
+      bedNumber: "GW-001-1",
+      bedLabel: "Bed 1",
+      status: "cleaning",
+      patientId: null,
+      patientName: "",
+      assignedAt: "",
+      expectedDischargeDate: "",
+      note: "Cleaning in progress after morning discharge."
+    },
+    {
+      id: generalWardBedTwoId,
+      roomId: generalWardRoomId,
+      bedNumber: "GW-001-2",
+      bedLabel: "Bed 2",
+      status: "occupied",
+      patientId: rajeshPatientId,
+      patientName: "Rajesh Patel",
+      assignedAt: `${today}T08:15:00`,
+      expectedDischargeDate: `${currentYear()}-03-25`,
+      note: "Short observation stay."
+    }
+  ],
+  ipdAdmissions: [
+    {
+      id: rajeshAdmissionId,
+      admissionNumber: `IPD-${currentYear()}-00001`,
+      patientId: rajeshPatientId,
+      patientName: "Rajesh Patel",
+      roomId: generalWardRoomId,
+      bedId: generalWardBedTwoId,
+      attendingDoctorId: doctorLookup[2]?.id || doctorLookup[0]?.id,
+      admissionDate: today,
+      admissionTime: "08:15",
+      admissionSource: "opd",
+      admissionType: "ipd",
+      reasonForAdmission: "Short observation for dizziness and dehydration",
+      diagnosis: "Acute weakness under observation",
+      status: "active",
+      expectedDischargeDate: `${currentYear()}-03-29`,
+      admittedBy: primaryReceptionist.id,
+      notes: [
+        {
+          id: createId(),
+          noteDate: `${today}T08:45:00`,
+          category: "admission",
+          note: "Patient admitted for short monitored stay.",
+          authorId: primaryReceptionist.id
+        }
+      ],
+      vitals: [
+        {
+          id: createId(),
+          recordedAt: `${today}T09:00:00`,
+          bp: "118/76",
+          pulse: 78,
+          temp: 98.2,
+          spo2: 99,
+          rr: 18,
+          weight: 68,
+          notes: "Stable on admission.",
+          recordedBy: primaryReceptionist.id
+        }
+      ],
+      dischargeSummary: null,
+      billId: ""
+    }
+  ],
+  panchkarmaTherapies: [
+    {
+      id: abhyangaTherapyId,
+      code: "PK-ABHY",
+      name: "Abhyanga",
+      category: "Snehana",
+      defaultDurationMinutes: 45,
+      price: 1200,
+      roomType: "therapy",
+      requiresRecovery: false,
+      description: "Full-body medicated oil massage for vata pacification and circulation support."
+    },
+    {
+      id: patraPindaTherapyId,
+      code: "PK-PPS",
+      name: "Patra Pinda Sweda",
+      category: "Swedana",
+      defaultDurationMinutes: 50,
+      price: 1500,
+      roomType: "therapy",
+      requiresRecovery: true,
+      description: "Herbal bolus fomentation for pain, stiffness, and musculoskeletal support."
+    },
+    {
+      id: shirodharaTherapyId,
+      code: "PK-SD",
+      name: "Shirodhara",
+      category: "Murdha Taila",
+      defaultDurationMinutes: 40,
+      price: 1800,
+      roomType: "therapy",
+      requiresRecovery: true,
+      description: "Medicated oil stream therapy for stress regulation and sleep support."
+    },
+    {
+      id: katiBastiTherapyId,
+      code: "PK-KB",
+      name: "Kati Basti",
+      category: "Basti External",
+      defaultDurationMinutes: 35,
+      price: 1400,
+      roomType: "therapy",
+      requiresRecovery: false,
+      description: "Localized oil retention therapy for lower-back discomfort and stiffness."
+    }
+  ],
+  panchkarmaSchedules: [
+    {
+      id: meeraTherapyScheduleId,
+      scheduleNumber: `PKS-${currentYear()}-00001`,
+      patientId: meeraPatientId,
+      patientName: "Meera Sharma",
+      therapyId: shirodharaTherapyId,
+      therapyName: "Shirodhara",
+      recommendedBy: doctorLookup[0]?.id || "",
+      recommendedByName: doctorLookup[0]?.fullName || "Unassigned",
+      linkedVisitId: meeraVisitId,
+      prescriptionId: meeraPrescriptionId,
+      therapyRoomId: panchkarmaRoomId,
+      recoveryBedId: "",
+      therapistId: "staff-013",
+      therapistName: "Mrs. Rajni Sen",
+      scheduledDate: today,
+      scheduledTime: "14:30",
+      estimatedDurationMinutes: 40,
+      status: "scheduled",
+      complaint: "Stress-linked headache with sleep disturbance",
+      preparationNotes: "Light meal only. Keep scalp ready for oil-based therapy.",
+      executionNotes: "",
+      followUpAdvice: "",
+      materialsUsed: [],
+      sessionStartedAt: "",
+      sessionCompletedAt: "",
+      outcome: "",
+      billId: "",
+      billedAmount: 0,
+      createdBy: primaryReceptionist.id
+    },
+    {
+      id: rajeshTherapyScheduleId,
+      scheduleNumber: `PKS-${currentYear()}-00002`,
+      patientId: rajeshPatientId,
+      patientName: "Rajesh Patel",
+      therapyId: patraPindaTherapyId,
+      therapyName: "Patra Pinda Sweda",
+      recommendedBy: doctorLookup[2]?.id || doctorLookup[0]?.id || "",
+      recommendedByName: doctorLookup[2]?.fullName || doctorLookup[0]?.fullName || "Unassigned",
+      linkedVisitId: "",
+      prescriptionId: "",
+      therapyRoomId: panchkarmaRoomId,
+      recoveryBedId: "",
+      therapistId: "staff-014",
+      therapistName: "Mr. Yogesh Lariya",
+      scheduledDate: today,
+      scheduledTime: "11:00",
+      estimatedDurationMinutes: 50,
+      status: "completed",
+      complaint: "Post-admission stiffness and body pain",
+      preparationNotes: "Assess tolerance before fomentation.",
+      executionNotes: "Completed with localized heat and post-session rest.",
+      followUpAdvice: "Hydrate well and avoid cold exposure for the rest of the day.",
+      materialsUsed: [
+        {
+          id: createId(),
+          medicineId: "med-005",
+          medicineName: "Nirgundi Taila",
+          quantity: 1,
+          unit: "bottle",
+          notes: "Used for fomentation support"
+        }
+      ],
+      sessionStartedAt: `${today}T11:05:00`,
+      sessionCompletedAt: `${today}T11:58:00`,
+      outcome: "Pain reduced and mobility improved after session.",
+      billId: "",
+      billedAmount: 1500,
+      createdBy: primaryReceptionist.id
     }
   ],
   medicineMasters: [
@@ -468,6 +768,17 @@ export const db = {
       quantity: 10,
       referenceNumber: "GRN-2026-00003",
       note: "External therapy stock"
+    },
+    {
+      id: createId(),
+      transactionDate: `${today}T11:58:00`,
+      medicineId: "med-005",
+      medicineName: "Nirgundi Taila",
+      batchId: "batch-004",
+      type: "therapy_issue",
+      quantity: -1,
+      referenceNumber: `PKS-${currentYear()}-00002`,
+      note: "Patra Pinda Sweda material issue"
     }
   ],
   dispensations: [
@@ -478,7 +789,7 @@ export const db = {
       patientId: meeraPatientId,
       patientName: "Meera Sharma",
       visitId: meeraVisitId,
-      dispensedBy: demoUsers[0].id,
+      dispensedBy: primaryPharmacist.id,
       dispensedDate: `${today}T11:05:00`,
       status: "completed",
       items: [
@@ -496,10 +807,77 @@ export const db = {
   ]
 };
 
+
+function mergeImportedInventoryData() {
+  const importedSuppliers = godownInventoryImport.suppliers.filter(
+    (supplier) => !db.suppliers.some((existing) => existing.id === supplier.id)
+  );
+  const importedMedicines = godownInventoryImport.medicineMasters.filter(
+    (medicine) => !db.medicineMasters.some((existing) => existing.id === medicine.id)
+  );
+  const importedBatches = godownInventoryImport.inventoryBatches.filter(
+    (batch) => !db.inventoryBatches.some((existing) => existing.id === batch.id)
+  );
+  const importedTransactions = godownInventoryImport.stockTransactions.filter(
+    (transaction) => !db.stockTransactions.some((existing) => existing.id === transaction.id)
+  );
+
+  db.suppliers.push(...importedSuppliers);
+  db.medicineMasters.push(...importedMedicines);
+  db.inventoryBatches.push(...importedBatches);
+  db.stockTransactions.push(...importedTransactions);
+}
+
+mergeImportedInventoryData();
+
 export function getDoctors() {
   return demoUsers
     .filter((user) => user.role === roles.DOCTOR)
     .map(({ password, ...doctor }) => doctor);
+}
+
+export function getTherapists() {
+  return demoUsers
+    .filter((user) => user.role === roles.THERAPIST)
+    .map(({ password, ...therapist }) => therapist);
+}
+
+export function getUsers() {
+  return demoUsers.map(({ password, ...user }) => user);
+}
+
+export function getUsersSummary() {
+  const users = getUsers();
+  const roleSummary = Object.values(
+    users.reduce((summary, user) => {
+      if (!summary[user.role]) {
+        summary[user.role] = { role: user.role, count: 0 };
+      }
+
+      summary[user.role].count += 1;
+      return summary;
+    }, {})
+  ).sort((left, right) => right.count - left.count || left.role.localeCompare(right.role));
+
+  const departmentSummary = Object.values(
+    users.reduce((summary, user) => {
+      if (!summary[user.department]) {
+        summary[user.department] = { department: user.department, count: 0 };
+      }
+
+      summary[user.department].count += 1;
+      return summary;
+    }, {})
+  ).sort((left, right) => right.count - left.count || left.department.localeCompare(right.department));
+
+  return {
+    totalEmployees: users.length,
+    activeEmployees: users.filter((user) => user.isActive).length,
+    doctors: users.filter((user) => user.role === roles.DOCTOR).length,
+    departments: departmentSummary.length,
+    roles: roleSummary,
+    departmentsList: departmentSummary
+  };
 }
 
 export function getDepartments() {
@@ -524,6 +902,14 @@ export function nextPrescriptionNumber() {
 
 export function nextLabOrderNumber() {
   return `LAB-${currentYear()}-${String(db.labOrders.length + 1).padStart(5, "0")}`;
+}
+
+export function nextIpdNumber() {
+  return `IPD-${currentYear()}-${String(db.ipdAdmissions.length + 1).padStart(5, "0")}`;
+}
+
+export function nextPanchkarmaScheduleNumber() {
+  return `PKS-${currentYear()}-${String(db.panchkarmaSchedules.length + 1).padStart(5, "0")}`;
 }
 
 export function nextBillNumber() {
@@ -554,3 +940,19 @@ export function getLabTestMasters() {
 export function getSuppliers() {
   return db.suppliers;
 }
+
+export function getGodownImportSummary() {
+  return godownInventoryImport.summary;
+}
+
+export function getRoomMasters() {
+  return {
+    roomTypes: ["general", "semi_private", "private", "deluxe", "icu", "therapy"],
+    bedStatuses: ["available", "occupied", "reserved", "cleaning", "maintenance"]
+  };
+}
+
+
+
+
+

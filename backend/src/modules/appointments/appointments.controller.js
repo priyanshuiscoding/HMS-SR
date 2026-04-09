@@ -17,9 +17,9 @@ export function listAppointmentsHandler(req, res, next) {
   }
 }
 
-export function createAppointmentHandler(req, res, next) {
+export async function createAppointmentHandler(req, res, next) {
   try {
-    const item = createAppointment(req.body, req.user.sub);
+    const item = await createAppointment(req.body, req.user.sub);
     res.status(201).json({ item, message: "Appointment booked successfully." });
   } catch (error) {
     next(error);
@@ -34,17 +34,17 @@ export function getAppointmentHandler(req, res, next) {
   }
 }
 
-export function updateAppointmentHandler(req, res, next) {
+export async function updateAppointmentHandler(req, res, next) {
   try {
-    res.json({ item: updateAppointment(req.params.id, req.body), message: "Appointment updated successfully." });
+    res.json({ item: await updateAppointment(req.params.id, req.body), message: "Appointment updated successfully." });
   } catch (error) {
     next(error);
   }
 }
 
-export function cancelAppointmentHandler(req, res, next) {
+export async function cancelAppointmentHandler(req, res, next) {
   try {
-    res.json({ item: cancelAppointment(req.params.id), message: "Appointment cancelled successfully." });
+    res.json({ item: await cancelAppointment(req.params.id), message: "Appointment cancelled successfully." });
   } catch (error) {
     next(error);
   }

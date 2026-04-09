@@ -34,9 +34,10 @@ export function PatientProfilePage() {
           <section className="profile-banner">
             <div>
               <div className="eyebrow">Patient Profile</div>
-              <h2>{patient.firstName} {patient.lastName}</h2>
+              <h2>{patient.title ? `${patient.title} ` : ""}{patient.firstName} {patient.lastName}</h2>
               <p>
-                UHID {patient.uhid} - {patient.gender} - Registered on {patient.registrationDate}
+                Reg. No. {patient.registrationNumber || patient.uhid} - {patient.patientType || "new"} - Registered on {patient.registrationDate}
+                {patient.registrationTime ? ` at ${patient.registrationTime}` : ""}
               </p>
             </div>
             <Link className="inline-link" to="/patients">
@@ -46,25 +47,52 @@ export function PatientProfilePage() {
 
           <section className="detail-grid">
             <article className="content-card">
-              <h3>Demographics</h3>
+              <h3>Registration and demographics</h3>
               <div className="detail-list">
-                <div><strong>Phone:</strong> {patient.phone}</div>
-                <div><strong>Email:</strong> {patient.email || "Not provided"}</div>
+                <div><strong>UHID:</strong> {patient.uhid}</div>
+                <div><strong>OPD / IPD No.:</strong> {patient.opdIpdNumber || "Not assigned"}</div>
+                <div><strong>Gender:</strong> {patient.gender}</div>
                 <div><strong>Date of birth:</strong> {patient.dateOfBirth}</div>
+                <div><strong>Age:</strong> {patient.ageYears || "Not recorded"} years</div>
                 <div><strong>Blood group:</strong> {patient.bloodGroup || "Not recorded"}</div>
-                <div><strong>Address:</strong> {patient.address}</div>
-                <div><strong>City/State:</strong> {patient.city}, {patient.state}</div>
+                <div><strong>Marital status:</strong> {patient.maritalStatus || "Not recorded"}</div>
+                <div><strong>Occupation:</strong> {patient.occupation || "Not recorded"}</div>
               </div>
             </article>
 
+            <article className="content-card">
+              <h3>Contact and identity</h3>
+              <div className="detail-list">
+                <div><strong>Mobile:</strong> {patient.phone}</div>
+                <div><strong>Alternate mobile:</strong> {patient.altPhone || "Not provided"}</div>
+                <div><strong>Email:</strong> {patient.email || "Not provided"}</div>
+                <div><strong>House / Street:</strong> {patient.houseStreet || patient.address || "Not provided"}</div>
+                <div><strong>Area / Village:</strong> {patient.areaVillage || "Not provided"}</div>
+                <div><strong>City / District:</strong> {patient.cityDistrict || patient.city || "Not provided"}</div>
+                <div><strong>State / PIN:</strong> {patient.state || "Not provided"}{patient.pincode ? ` - ${patient.pincode}` : ""}</div>
+                <div><strong>ID Proof:</strong> {patient.idType ? `${patient.idType} - ${patient.idNumber || "number not recorded"}` : "Not provided"}</div>
+              </div>
+            </article>
+          </section>
+
+          <section className="detail-grid">
             <article className="content-card">
               <h3>Emergency and referral</h3>
               <div className="detail-list">
                 <div><strong>Emergency contact:</strong> {patient.emergencyContactName || "Not provided"}</div>
                 <div><strong>Emergency phone:</strong> {patient.emergencyContactPhone || "Not provided"}</div>
-                <div><strong>Alternate phone:</strong> {patient.altPhone || "Not provided"}</div>
                 <div><strong>Referred by:</strong> {patient.referredBy || "Not captured"}</div>
-                <div><strong>Pincode:</strong> {patient.pincode || "Not recorded"}</div>
+                <div><strong>Saved address:</strong> {patient.address || "Not recorded"}</div>
+              </div>
+            </article>
+
+            <article className="content-card">
+              <h3>Registration summary</h3>
+              <div className="detail-list">
+                <div><strong>Patient type:</strong> {patient.patientType || "new"}</div>
+                <div><strong>Registration date:</strong> {patient.registrationDate}</div>
+                <div><strong>Registration time:</strong> {patient.registrationTime || "Auto-generated"}</div>
+                <div><strong>Created by user:</strong> {patient.createdBy || "System"}</div>
               </div>
             </article>
           </section>
@@ -154,8 +182,22 @@ export function PatientProfilePage() {
             </article>
 
             <article className="content-card">
-              <h3>Lab, billing, and pharmacy</h3>
+              <h3>IPD, Panchkarma, lab, billing, and pharmacy</h3>
               <div className="stack-list">
+                {payload.ipdAdmissions.map((admission) => (
+                  <div key={admission.id} className="quick-action">
+                    <strong>{admission.admissionNumber}</strong>
+                    <div className="timeline-copy">{admission.reasonForAdmission}</div>
+                    <div className="timeline-copy">Status: {admission.status}</div>
+                  </div>
+                ))}
+                {payload.panchkarmaSchedules.map((session) => (
+                  <div key={session.id} className="quick-action">
+                    <strong>{session.scheduleNumber}</strong>
+                    <div className="timeline-copy">{session.therapyName}</div>
+                    <div className="timeline-copy">Status: {session.status}</div>
+                  </div>
+                ))}
                 {payload.labOrders.map((order) => (
                   <div key={order.id} className="quick-action">
                     <strong>{order.orderNumber}</strong>
@@ -186,11 +228,13 @@ export function PatientProfilePage() {
                     <div className="timeline-copy">Received: {payment.paymentDate}</div>
                   </div>
                 ))}
-                {!payload.labOrders.length &&
+                {!payload.ipdAdmissions.length &&
+                !payload.panchkarmaSchedules.length &&
+                !payload.labOrders.length &&
                 !payload.bills.length &&
                 !payload.dispensations.length &&
                 !payload.payments.length ? (
-                  <div className="empty-state">No lab, billing, pharmacy, or payment records recorded yet.</div>
+                  <div className="empty-state">No IPD, Panchkarma, lab, billing, pharmacy, or payment records recorded yet.</div>
                 ) : null}
               </div>
             </article>

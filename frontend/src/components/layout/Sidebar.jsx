@@ -6,6 +6,10 @@ const primaryLinks = [
   { label: "Appointments", to: "/appointments" },
   { label: "OPD", to: "/opd" },
   { label: "Billing", to: "/billing" },
+  { label: "IPD", to: "/ipd" },
+  { label: "Panchkarma", to: "/panchkarma" },
+  { label: "Rooms", to: "/rooms" },
+  { label: "Laboratory", to: "/laboratory" },
   { label: "Pharmacy", to: "/pharmacy" },
   { label: "Inventory", to: "/inventory" }
 ];

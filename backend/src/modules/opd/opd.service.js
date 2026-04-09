@@ -16,6 +16,8 @@ function createError(message, statusCode = 400) {
   return error;
 }
 
+const CONSULTATION_FEE = 200;
+
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -60,7 +62,7 @@ export function getQueue(date = todayDate(), doctorId = "") {
     .sort((a, b) => a.tokenNumber - b.tokenNumber);
 }
 
-export function createVisit({ appointmentId, consultationFee = 500 }) {
+export function createVisit({ appointmentId }) {
   const appointment = getAppointmentById(appointmentId);
   const existingVisit = db.opdVisits.find((entry) => entry.appointmentId === appointmentId);
 
@@ -86,7 +88,7 @@ export function createVisit({ appointmentId, consultationFee = 500 }) {
     vitalsSpo2: null,
     vitalsRr: null,
     status: "waiting",
-    consultationFee
+    consultationFee: CONSULTATION_FEE
   };
 
   db.opdVisits.push(visit);
@@ -237,6 +239,7 @@ export function getOpdMasters() {
     agniStatuses: ["sama", "vishama", "tikshna", "manda"],
     koshthaTypes: ["mridu", "madhyama", "krura"],
     frequencies: ["OD", "BD", "TDS", "QID", "SOS"],
-    routes: ["oral", "external", "nasya", "enema"]
+    routes: ["oral", "external", "nasya", "enema"],
+    consultationFee: CONSULTATION_FEE
   };
 }

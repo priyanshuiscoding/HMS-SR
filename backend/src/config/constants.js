@@ -5,11 +5,20 @@ export const roles = {
   PHARMACY: "pharmacy",
   LAB: "lab",
   THERAPIST: "therapist",
+  NURSING: "nursing",
+  HOUSEKEEPING: "housekeeping",
   ACCOUNTS: "accounts",
   HR: "hr"
 };
 
-export const departments = [
+const departmentOptions = [
+  "Administration",
+  "Clinical Department",
+  "Housekeeping",
+  "Nursing",
+  "Panchkarma",
+  "Pharmacy",
+  "Reception",
   "Neuro Pain Management",
   "Diabetic Reversal Program",
   "Panchkarma Therapies",
@@ -28,91 +37,319 @@ export const departments = [
   "Mental Wellbeing Department"
 ];
 
-export const demoUsers = [
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function cleanPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) {
+    return "";
+  }
+
+  return digits.length > 10 ? `+${digits}` : digits;
+}
+
+function formatName(value) {
+  const normalized = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/DR\./gi, "Dr. ")
+    .replace(/MR\./gi, "Mr. ")
+    .replace(/MRS\./gi, "Mrs. ")
+    .replace(/MRS /gi, "Mrs. ")
+    .replace(/MS\./gi, "Ms. ")
+    .replace(/MISS\./gi, "Miss. ");
+
+  return normalized
+    .split(" ")
+    .filter(Boolean)
+    .map((segment) => {
+      if (/^(Dr\.|Mr\.|Mrs\.|Ms\.|Miss\.)$/i.test(segment)) {
+        return segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase();
+      }
+
+      return segment
+        .split("/")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join("/");
+    })
+    .join(" ");
+}
+
+function normalizeDepartment(value) {
+  const department = String(value || "").trim();
+
+  switch (department.toLowerCase()) {
+    case "admin":
+      return "Administration";
+    case "clinical department":
+      return "Clinical Department";
+    case "housekeeping":
+      return "Housekeeping";
+    case "panchkarma":
+      return "Panchkarma";
+    case "managing director":
+      return "Clinical Department";
+    default:
+      return department;
+  }
+}
+
+function inferRole(department, designation, fullName) {
+  const normalizedDepartment = normalizeDepartment(department).toLowerCase();
+  const normalizedDesignation = String(designation || "").toLowerCase();
+  const normalizedName = String(fullName || "").toLowerCase();
+
+  if (
+    normalizedName.startsWith("dr.") ||
+    normalizedDepartment === "clinical department" ||
+    normalizedDesignation.includes("medical officer") ||
+    normalizedDesignation.includes("joint & spine specialist")
+  ) {
+    return roles.DOCTOR;
+  }
+
+  if (normalizedDepartment === "administration" && normalizedDesignation.includes("hr")) {
+    return roles.HR;
+  }
+
+  if (normalizedDepartment === "administration") {
+    return roles.ADMIN;
+  }
+
+  if (normalizedDepartment === "reception") {
+    return roles.RECEPTION;
+  }
+
+  if (normalizedDepartment === "pharmacy") {
+    return roles.PHARMACY;
+  }
+
+  if (normalizedDepartment === "panchkarma") {
+    return roles.THERAPIST;
+  }
+
+  if (normalizedDepartment === "nursing") {
+    return roles.NURSING;
+  }
+
+  if (normalizedDepartment === "housekeeping") {
+    return roles.HOUSEKEEPING;
+  }
+
+  return roles.ADMIN;
+}
+
+function defaultPasswordForRole(role) {
+  switch (role) {
+    case roles.ADMIN:
+      return "Admin@123";
+    case roles.RECEPTION:
+      return "Reception@123";
+    case roles.DOCTOR:
+      return "Doctor@123";
+    case roles.PHARMACY:
+      return "Pharmacy@123";
+    case roles.HR:
+      return "Hr@12345";
+    case roles.ACCOUNTS:
+      return "Accounts@123";
+    default:
+      return "Welcome@123";
+  }
+}
+
+const employeeSeedRows = [
   {
-    id: "f7d2e516-4184-4ad2-ae1c-73018ab4a111",
-    employeeId: "SRA-ADM-001",
-    fullName: "Aarav Mehta",
-    email: "admin@sraiims.in",
-    password: "Admin@123",
-    role: roles.ADMIN,
-    department: "Administration"
+    employeeId: "SRA-EMP-001",
+    fullName: "DR.SAURABH BHARILL",
+    department: "Managing Director",
+    designation: "Managing Director",
+    phone: ""
   },
   {
-    id: "d2e3c8d3-7f7e-45ad-8733-c482336f2001",
-    employeeId: "SRA-REC-001",
-    fullName: "Sakshi Tiwari",
-    email: "reception@sraiims.in",
-    password: "Reception@123",
-    role: roles.RECEPTION,
-    department: "Front Desk"
+    employeeId: "SRA-EMP-002",
+    fullName: "DR. M SENTHILKUMAR",
+    department: "Clinical Department",
+    designation: "RMO (Joint & Spine Specialist)",
+    phone: "+91 63858 99964"
   },
   {
-    id: "4a7be854-48e1-4b5d-b0fd-c79d5cc84001",
-    employeeId: "SRA-DR-001",
-    fullName: "Dr. Saurabh Bharill",
-    email: "doctor@sraiims.in",
-    password: "Doctor@123",
-    role: roles.DOCTOR,
-    department: "Neuro Pain Management",
-    title: "Managing Director"
+    employeeId: "SRA-EMP-003",
+    fullName: "DR.RIYA BHARGAV",
+    department: "Clinical Department",
+    designation: "Ayurvedic Medical Officer (AMO)",
+    phone: "+91 97528 39244"
   },
   {
-    id: "4f6cc57e-d549-4d08-b763-5d7df0f16002",
-    employeeId: "SRA-DR-002",
-    fullName: "Dr. M. Senthil Kumar",
-    email: "senthil@sraiims.in",
-    password: "Doctor@123",
-    role: roles.DOCTOR,
-    department: "Orthopaedic Department",
-    title: "Joint & Spine Specialist"
+    employeeId: "SRA-EMP-004",
+    fullName: "DR. SANKET CHINTEWAR",
+    department: "Clinical Department",
+    designation: "Junior Medical Officer (JMO)",
+    phone: "+91 88550 90878"
   },
   {
-    id: "ad2db473-1e0f-4ea2-b73d-99791e6d1003",
-    employeeId: "SRA-DR-003",
-    fullName: "Dr. Sanket Chintewar",
-    email: "sanket@sraiims.in",
-    password: "Doctor@123",
-    role: roles.DOCTOR,
-    department: "Yoga And Naturopathy Department",
-    title: "Naturopathy & Yoga Specialist"
+    employeeId: "SRA-EMP-005",
+    fullName: "MR.PRADEEP JAIN",
+    department: "Admin",
+    designation: "Hospital Manager",
+    phone: "+91 87208 95586"
   },
   {
-    id: "cffab39f-5e23-4b13-a1ee-ef98d9001004",
-    employeeId: "SRA-DR-004",
-    fullName: "Dr. Riya Bhargav",
-    email: "riya@sraiims.in",
-    password: "Doctor@123",
-    role: roles.DOCTOR,
-    department: "Ayurvedic OPD",
-    title: "Ayurvedic Medical Officer"
+    employeeId: "SRA-EMP-006",
+    fullName: "MS. KHUSHBOO GOVA",
+    department: "Admin",
+    designation: "HR Assistant",
+    phone: "+91 82698 26288"
   },
   {
-    id: "ff2b4859-ccea-4744-b86d-6ee99d190005",
-    employeeId: "SRA-DR-005",
-    fullName: "Dr. Prasansa Upadhyay",
-    email: "prasansa@sraiims.in",
-    password: "Doctor@123",
-    role: roles.DOCTOR,
-    department: "Yoga And Naturopathy Department",
-    title: "Naturopathy & Yoga Specialist"
+    employeeId: "SRA-EMP-007",
+    fullName: "MRS SABNAM KHAN",
+    department: "Housekeeping",
+    designation: "Housekeeping",
+    phone: "+91 92385 24938"
   },
   {
-    id: "0e4d489f-7522-4856-bec6-99cf64a30006",
-    employeeId: "SRA-HR-001",
-    fullName: "Miss Khushboo Nova",
-    email: "hr@sraiims.in",
-    password: "Hr@12345",
-    role: roles.HR,
-    department: "Human Resources"
+    employeeId: "SRA-EMP-008",
+    fullName: "MRS PREETI PATEL",
+    department: "Housekeeping",
+    designation: "Housekeeping",
+    phone: "+91 94256 10131"
   },
   {
-    id: "5dca8ca7-bb37-4dd0-a48d-6aa55de70007",
-    employeeId: "SRA-ACC-001",
-    fullName: "Nitin Shrivastava",
-    email: "accounts@sraiims.in",
-    password: "Accounts@123",
-    role: roles.ACCOUNTS,
-    department: "Accounts"
+    employeeId: "SRA-EMP-009",
+    fullName: "MRS JYOTI AHIRWAR",
+    department: "Housekeeping",
+    designation: "Housekeeping",
+    phone: "6264386206"
+  },
+  {
+    employeeId: "SRA-EMP-010",
+    fullName: "MR. BRIJENDEA",
+    department: "Nursing",
+    designation: "Nursing Staff",
+    phone: "+91 62674 91118"
+  },
+  {
+    employeeId: "SRA-EMP-011",
+    fullName: "MS. REKHA RAJAK",
+    department: "Nursing",
+    designation: "Nursing Staff",
+    phone: "+91 82696 57142"
+  },
+  {
+    employeeId: "SRA-EMP-012",
+    fullName: "MRS. NEETU SHARMA",
+    department: "Panchkarma",
+    designation: "Panchkarma Supervisor",
+    phone: "+91 99810 54600"
+  },
+  {
+    employeeId: "SRA-EMP-013",
+    fullName: "MRS RAJNI SEN",
+    department: "Panchkarma",
+    designation: "Panchkarma Therapist",
+    phone: "+91 99076 54035"
+  },
+  {
+    employeeId: "SRA-EMP-014",
+    fullName: "MR YOGESH LARIYA",
+    department: "Panchkarma",
+    designation: "Panchkarma Therapist",
+    phone: "+91 92012 50296"
+  },
+  {
+    employeeId: "SRA-EMP-015",
+    fullName: "MRS GAYATRI",
+    department: "Panchkarma",
+    designation: "Panchkarma Therapist",
+    phone: "+91 92012 50296"
+  },
+  {
+    employeeId: "SRA-EMP-016",
+    fullName: "MR ROHIT YADAV",
+    department: "Panchkarma",
+    designation: "Panchkarma Therapist",
+    phone: "+91 7489 878 933"
+  },
+  {
+    employeeId: "SRA-EMP-017",
+    fullName: "MR RISHI JAIN",
+    department: "Pharmacy",
+    designation: "Pharmacy Manager",
+    phone: "+91 75809 38485"
+  },
+  {
+    employeeId: "SRA-EMP-018",
+    fullName: "MR SURAJ RAIKWAR",
+    department: "Pharmacy",
+    designation: "Pharmacy Executive",
+    phone: "+91 78793 08018"
+  },
+  {
+    employeeId: "SRA-EMP-019",
+    fullName: "MISS.AARTI CHAKRAVARTI",
+    department: "Reception",
+    designation: "Receptionist (Supervisor)",
+    phone: "+91 62639 91324"
+  },
+  {
+    employeeId: "SRA-EMP-020",
+    fullName: "MR. KHILAN KUMAR",
+    department: "Reception",
+    designation: "Receptionist",
+    phone: "+91 62695 57242"
+  },
+  {
+    employeeId: "SRA-EMP-021",
+    fullName: "MRS SATYAM NAMDEV",
+    department: "Reception",
+    designation: "Receptionist",
+    phone: "+91 89825 65845"
   }
 ];
+
+export const demoUsers = employeeSeedRows.map((entry, index) => {
+  const fullName = formatName(entry.fullName);
+  const department = normalizeDepartment(entry.department);
+  const role = inferRole(department, entry.designation, fullName);
+  const emailPrefix = fullName.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.|Miss\.)\s+/i, "");
+  const generatedEmail = `${slugify(emailPrefix).replace(/-/g, ".")}@sraiims.in`;
+
+  let email = generatedEmail;
+  let password = defaultPasswordForRole(role);
+
+  if (fullName === "Mr. Pradeep Jain") {
+    email = "admin@sraiims.in";
+    password = "Admin@123";
+  } else if (fullName === "Miss. Aarti Chakravarti") {
+    email = "reception@sraiims.in";
+    password = "Reception@123";
+  } else if (fullName === "Dr. Saurabh Bharill") {
+    email = "doctor@sraiims.in";
+    password = "Doctor@123";
+  } else if (fullName === "Ms. Khushboo Gova") {
+    email = "hr@sraiims.in";
+    password = "Hr@12345";
+  }
+
+  return {
+    id: `staff-${String(index + 1).padStart(3, "0")}`,
+    employeeId: entry.employeeId,
+    fullName,
+    email,
+    password,
+    role,
+    department,
+    title: entry.designation || department,
+    designation: entry.designation || department,
+    phone: cleanPhone(entry.phone),
+    isActive: true
+  };
+});
+
+export const departments = Array.from(new Set([...departmentOptions, ...demoUsers.map((user) => user.department)])).sort();

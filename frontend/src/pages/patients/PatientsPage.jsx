@@ -3,27 +3,58 @@ import { Link } from "react-router-dom";
 
 import { Button } from "../../components/common/Button.jsx";
 import { DashboardLayout } from "../../components/layout/DashboardLayout.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 import { createPatient, getPatients } from "../../services/api.js";
 
 const initialForm = {
+  patientType: "new",
+  title: "Mr",
   firstName: "",
   lastName: "",
   dateOfBirth: "",
   gender: "female",
   bloodGroup: "",
+  maritalStatus: "",
+  occupation: "",
   phone: "",
   altPhone: "",
   email: "",
-  address: "",
-  city: "Sagar",
+  houseStreet: "",
+  areaVillage: "",
+  cityDistrict: "Sagar",
   state: "Madhya Pradesh",
   pincode: "",
+  idType: "",
+  idNumber: "",
+  opdIpdNumber: "",
   emergencyContactName: "",
   emergencyContactPhone: "",
   referredBy: "Front Desk"
 };
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) {
+    return "";
+  }
+
+  const birthDate = new Date(dateOfBirth);
+  if (Number.isNaN(birthDate.getTime())) {
+    return "";
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age;
+}
+
 export function PatientsPage() {
+  const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [search, setSearch] = useState("");
   const [formState, setFormState] = useState(initialForm);
@@ -53,9 +84,12 @@ export function PatientsPage() {
     return {
       total: patients.length,
       today: patients.filter((patient) => patient.registrationDate === today).length,
-      fromSagar: patients.filter((patient) => patient.city === "Sagar").length
+      fromSagar: patients.filter((patient) => (patient.cityDistrict || patient.city) === "Sagar").length
     };
   }, [patients]);
+
+  const derivedAge = useMemo(() => calculateAge(formState.dateOfBirth), [formState.dateOfBirth]);
+  const canRegisterPatient = ["admin", "reception"].includes(user?.role);
 
   const handleInputChange = (event) => {
     setFormState((current) => ({
@@ -72,6 +106,10 @@ export function PatientsPage() {
 
   const handleCreatePatient = async (event) => {
     event.preventDefault();
+    if (!canRegisterPatient) {
+      setError("Only admin and reception users can register patients.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     setSuccess("");
@@ -92,10 +130,10 @@ export function PatientsPage() {
     <DashboardLayout>
       <section className="hero-panel">
         <div className="eyebrow">Patient Registry</div>
-        <h2>Reception-ready registration built around the Shanti-Ratnam patient intake flow.</h2>
+        <h2>Reception-ready registration aligned to the hospital patient intake form.</h2>
         <p>
-          This module handles UHID-led registration, search by phone or name, emergency contact capture,
-          and a clean path into appointments, OPD, and later IPD.
+          This module now captures registration details, personal information, contact data, and optional ID proof
+          from your hospital registration sheet so front desk staff can register patients in one flow.
         </p>
       </section>
 
@@ -113,7 +151,7 @@ export function PatientsPage() {
         <article className="stat-card">
           <div className="stat-label">Sagar Base</div>
           <div className="stat-value">{stats.fromSagar}</div>
-          <div className="stat-note">Primary city count</div>
+          <div className="stat-note">Primary city or district count</div>
         </article>
         <article className="stat-card">
           <div className="stat-label">Phase 2</div>
@@ -131,7 +169,39 @@ export function PatientsPage() {
             </div>
           </div>
 
+          <div className="empty-state" style={{ marginBottom: 18 }}>
+            Registration number, date, and time are generated automatically when the patient is saved.
+          </div>
+
           <form className="form-grid" onSubmit={handleCreatePatient}>
+            <div className="field">
+              <label>Patient type</label>
+              <select name="patientType" value={formState.patientType} onChange={handleInputChange}>
+                <option value="new">New</option>
+                <option value="follow_up">Follow-up</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>OPD / IPD No.</label>
+              <input name="opdIpdNumber" value={formState.opdIpdNumber} onChange={handleInputChange} />
+            </div>
+            <div className="field">
+              <label>Title</label>
+              <select name="title" value={formState.title} onChange={handleInputChange}>
+                <option value="Mr">Mr</option>
+                <option value="Mrs">Mrs</option>
+                <option value="Miss">Miss</option>
+                <option value="Master">Master</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Gender</label>
+              <select name="gender" value={formState.gender} onChange={handleInputChange}>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
             <div className="field">
               <label>First name</label>
               <input name="firstName" value={formState.firstName} onChange={handleInputChange} />
@@ -145,48 +215,74 @@ export function PatientsPage() {
               <input name="dateOfBirth" type="date" value={formState.dateOfBirth} onChange={handleInputChange} />
             </div>
             <div className="field">
-              <label>Gender</label>
-              <select name="gender" value={formState.gender} onChange={handleInputChange}>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Phone</label>
-              <input name="phone" value={formState.phone} onChange={handleInputChange} />
-            </div>
-            <div className="field">
-              <label>Alternate phone</label>
-              <input name="altPhone" value={formState.altPhone} onChange={handleInputChange} />
-            </div>
-            <div className="field">
-              <label>Email</label>
-              <input name="email" type="email" value={formState.email} onChange={handleInputChange} />
+              <label>Age</label>
+              <input value={derivedAge} disabled readOnly placeholder="Auto from DOB" />
             </div>
             <div className="field">
               <label>Blood group</label>
               <input name="bloodGroup" value={formState.bloodGroup} onChange={handleInputChange} />
             </div>
+            <div className="field">
+              <label>Marital status</label>
+              <select name="maritalStatus" value={formState.maritalStatus} onChange={handleInputChange}>
+                <option value="">Select</option>
+                <option value="single">Single</option>
+                <option value="married">Married</option>
+              </select>
+            </div>
             <div className="field field-span-2">
-              <label>Address</label>
-              <input name="address" value={formState.address} onChange={handleInputChange} />
+              <label>Occupation</label>
+              <input name="occupation" value={formState.occupation} onChange={handleInputChange} />
             </div>
             <div className="field">
-              <label>City</label>
-              <input name="city" value={formState.city} onChange={handleInputChange} />
+              <label>Mobile no.</label>
+              <input name="phone" value={formState.phone} onChange={handleInputChange} />
+            </div>
+            <div className="field">
+              <label>Alternate mobile no.</label>
+              <input name="altPhone" value={formState.altPhone} onChange={handleInputChange} />
+            </div>
+            <div className="field field-span-2">
+              <label>Email ID</label>
+              <input name="email" type="email" value={formState.email} onChange={handleInputChange} />
+            </div>
+            <div className="field field-span-2">
+              <label>House / Street</label>
+              <input name="houseStreet" value={formState.houseStreet} onChange={handleInputChange} />
+            </div>
+            <div className="field field-span-2">
+              <label>Area / Village</label>
+              <input name="areaVillage" value={formState.areaVillage} onChange={handleInputChange} />
+            </div>
+            <div className="field">
+              <label>City / District</label>
+              <input name="cityDistrict" value={formState.cityDistrict} onChange={handleInputChange} />
             </div>
             <div className="field">
               <label>State</label>
               <input name="state" value={formState.state} onChange={handleInputChange} />
             </div>
             <div className="field">
-              <label>Pincode</label>
+              <label>PIN code</label>
               <input name="pincode" value={formState.pincode} onChange={handleInputChange} />
             </div>
             <div className="field">
               <label>Referred by</label>
               <input name="referredBy" value={formState.referredBy} onChange={handleInputChange} />
+            </div>
+            <div className="field">
+              <label>ID type</label>
+              <select name="idType" value={formState.idType} onChange={handleInputChange}>
+                <option value="">Optional</option>
+                <option value="aadhaar">Aadhaar</option>
+                <option value="voter_id">Voter ID</option>
+                <option value="pan">PAN</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>ID number</label>
+              <input name="idNumber" value={formState.idNumber} onChange={handleInputChange} />
             </div>
             <div className="field">
               <label>Emergency contact</label>
@@ -209,10 +305,15 @@ export function PatientsPage() {
             {success ? <div className="success-text field-span-2">{success}</div> : null}
 
             <div className="field-span-2 action-row">
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting || !canRegisterPatient}>
                 {submitting ? "Registering..." : "Register Patient"}
               </Button>
             </div>
+            {!canRegisterPatient ? (
+              <div className="empty-state field-span-2">
+                Patient registration is available only to admin and reception roles.
+              </div>
+            ) : null}
           </form>
         </article>
 
@@ -229,7 +330,7 @@ export function PatientsPage() {
               className="search-input"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by UHID, phone, or patient name"
+              placeholder="Search by reg no., UHID, OPD/IPD no., phone, ID number, or patient name"
             />
             <Button type="submit">Search</Button>
           </form>
@@ -241,10 +342,11 @@ export function PatientsPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>UHID</th>
+                    <th>Reg No.</th>
                     <th>Name</th>
-                    <th>Phone</th>
-                    <th>City</th>
+                    <th>Type</th>
+                    <th>Mobile</th>
+                    <th>City / District</th>
                     <th>Registered</th>
                     <th></th>
                   </tr>
@@ -252,10 +354,11 @@ export function PatientsPage() {
                 <tbody>
                   {patients.map((patient) => (
                     <tr key={patient.id}>
-                      <td>{patient.uhid}</td>
-                      <td>{patient.firstName} {patient.lastName}</td>
+                      <td>{patient.registrationNumber || patient.uhid}</td>
+                      <td>{patient.title ? `${patient.title} ` : ""}{patient.firstName} {patient.lastName}</td>
+                      <td>{patient.patientType || "new"}</td>
                       <td>{patient.phone}</td>
-                      <td>{patient.city}</td>
+                      <td>{patient.cityDistrict || patient.city}</td>
                       <td>{patient.registrationDate}</td>
                       <td>
                         <Link className="table-link" to={`/patients/${patient.id}`}>
